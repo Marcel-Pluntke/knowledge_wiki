@@ -19,8 +19,7 @@ const config: Config = {
 
   organizationName: 'Marcel-Pluntke',
   projectName: 'knowledge_wiki',
-  deploymentBranch: 'gh-pages',
-
+  
   // Optional, but recommended
   trailingSlash: false,
   onBrokenLinks: 'throw',
