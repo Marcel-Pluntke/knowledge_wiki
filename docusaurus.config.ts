@@ -66,7 +66,7 @@ const config: Config = {
       title: 'Knowledge Wiki',
       logo: {
         alt: 'Knowledge Wiki Logo',
-        src: 'img/logo.svg',
+        src: 'img/icon_green.png',
       },
       items: [
         {
