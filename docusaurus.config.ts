@@ -36,12 +36,12 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/Marcel-Pluntke/knowledge_wiki/tree/main/docs/',
+          editUrl: 'https://github.com/Marcel-Pluntke/knowledge_wiki/tree/main/',
           routeBasePath: 'docs',
         },
         blog: {
           showReadingTime: true,
-          editUrl: 'https://github.com/Marcel-Pluntke/knowledge_wiki/tree/main/blog/',
+          editUrl: 'https://github.com/Marcel-Pluntke/knowledge_wiki/tree/main/',
           feedOptions: {
             type: ['rss', 'atom'],
             xslt: true,
