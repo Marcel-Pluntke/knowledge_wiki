@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Knowledge Wiki',
   tagline: 'Documentation, Automation, Test Engineering',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/icon_green.png',
 
   future: {
     v4: true,
