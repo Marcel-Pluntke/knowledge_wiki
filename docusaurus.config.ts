@@ -6,7 +6,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'Knowledge Wiki',
-  tagline: 'Wissen, Notizen, How-Tos',
+  tagline: 'Documentation, Automation, Test Engineering',
   favicon: 'img/favicon.ico',
 
   future: {
@@ -73,7 +73,7 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
-          label: 'Docs',
+          label: 'Topics',
         },
         {to: '/blog', label: 'Blog', position: 'left'},
         {
@@ -87,22 +87,23 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'Docs',
+          title: 'Topics',
           items: [
-            {label: 'Start', to: '/docs/intro'},
+            {label: 'Overview', to: '/docs/intro'},
+            {label: 'Documentation', to: '/docs/documentation'},
+            {label: 'Automation', to: '/docs/automation'},
+            {label: 'Test Engineering', to: '/docs/test-engineering'},
           ],
         },
         {
-          title: 'Community',
+          title: 'Write',
           items: [
-            {label: 'Docusaurus (Docs)', href: 'https://docusaurus.io/docs'},
-            {label: 'Docusaurus (Discord)', href: 'https://docusaurus.io/community/support'},
+            {label: 'Blog', to: '/blog'},
           ],
         },
         {
           title: 'More',
           items: [
-            {label: 'Blog', to: '/blog'},
             {label: 'Repo', href: 'https://github.com/Marcel-Pluntke/knowledge_wiki'},
           ],
         },

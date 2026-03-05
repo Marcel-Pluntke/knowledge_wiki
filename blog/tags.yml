@@ -1,19 +1,14 @@
-facebook:
-  label: Facebook
-  permalink: /facebook
-  description: Facebook tag description
+documentation:
+  label: Documentation
+  permalink: /documentation
+  description: Posts about technical writing, structure, and knowledge sharing.
 
-hello:
-  label: Hello
-  permalink: /hello
-  description: Hello tag description
+automation:
+  label: Automation
+  permalink: /automation
+  description: Posts about scripts, workflows, and process improvements.
 
-docusaurus:
-  label: Docusaurus
-  permalink: /docusaurus
-  description: Docusaurus tag description
-
-hola:
-  label: Hola
-  permalink: /hola
-  description: Hola tag description
+testengineering:
+  label: Test Engineering
+  permalink: /testengineering
+  description: Posts about quality strategy, automation, and test reliability.

@@ -1,57 +1,68 @@
 import type {ReactNode} from 'react';
 import clsx from 'clsx';
+import Link from '@docusaurus/Link';
 import Heading from '@theme/Heading';
 import styles from './styles.module.css';
 
 type FeatureItem = {
   title: string;
-  Svg: React.ComponentType<React.ComponentProps<'svg'>>;
   description: ReactNode;
+  to: string;
 };
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Easy to Use',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    title: 'Documentation',
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Learn how clear structure, shared standards, and good examples make technical knowledge reusable.
+        Follow practical notes and templates that keep docs useful over time.
       </>
     ),
+    to: '/docs/documentation',
   },
   {
-    title: 'Focus on What Matters',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    title: 'Automation',
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Explore ways to reduce repetitive manual work in delivery, maintenance, and operations.
+        Focus on scripts and workflows that are simple, testable, and easy to improve.
       </>
     ),
+    to: '/docs/automation',
   },
   {
-    title: 'Powered by React',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    title: 'Test Engineering',
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        Dive into approaches for building reliable automated tests across different layers.
+        See strategies for stable pipelines, readable test suites, and actionable quality signals.
       </>
     ),
+    to: '/docs/test-engineering',
+  },
+  {
+    title: 'More Topics',
+    description: (
+      <>
+        Collect additional ideas and experiments that support engineering effectiveness.
+        Expect short write-ups on tooling, collaboration, and technical learning paths.
+      </>
+    ),
+    to: '/docs/more-topics',
   },
 ];
 
-function Feature({title, Svg, description}: FeatureItem) {
+function Feature({title, description, to}: FeatureItem) {
   return (
-    <div className={clsx('col col--4')}>
-      <div className="text--center">
-        <Svg className={styles.featureSvg} role="img" />
-      </div>
-      <div className="text--center padding-horiz--md">
+    <div className={clsx('col col--6', styles.featureCardWrap)}>
+      <article className={styles.featureCard}>
         <Heading as="h3">{title}</Heading>
         <p>{description}</p>
-      </div>
+        <Link className="button button--primary button--sm" to={to}>
+          Read page
+        </Link>
+      </article>
     </div>
   );
 }
@@ -61,8 +72,8 @@ export default function HomepageFeatures(): ReactNode {
     <section className={styles.features}>
       <div className="container">
         <div className="row">
-          {FeatureList.map((props, idx) => (
-            <Feature key={idx} {...props} />
+          {FeatureList.map((props) => (
+            <Feature key={props.title} {...props} />
           ))}
         </div>
       </div>
