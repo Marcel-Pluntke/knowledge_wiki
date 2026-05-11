@@ -10,7 +10,10 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'WinCC OA',
-      items: ['wincc-oa/wincc-oa-ctrl-links'],
+      items: [
+        'wincc-oa/wincc-oa-ctrl-links',
+        'wincc-oa/wincc-oa-gedi-graphics-links',
+      ],
     },
     'more-topics',
   ],
