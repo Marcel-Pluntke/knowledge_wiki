@@ -8,6 +8,13 @@ const sidebars: SidebarsConfig = {
     'test-engineering',
     {
       type: 'category',
+      label: 'Low Voltage Standards',
+      items: [
+        'low-voltage-standards/iec-61439-niederspannungs-schaltgeraetekombinationen',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Measurement Technology',
       items: [
         'measurement-technology',
