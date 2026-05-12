@@ -11,6 +11,7 @@ const sidebars: SidebarsConfig = {
       label: 'Low Voltage Standards',
       items: [
         'low-voltage-standards/iec-61439-niederspannungs-schaltgeraetekombinationen',
+        'low-voltage-standards/iec-61439-kapitel-10-pruefungen-design-verification',
       ],
     },
     {
