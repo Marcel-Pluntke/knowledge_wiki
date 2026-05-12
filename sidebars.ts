@@ -6,7 +6,14 @@ const sidebars: SidebarsConfig = {
     'documentation',
     'automation',
     'test-engineering',
-    'measurement-technology',
+    {
+      type: 'category',
+      label: 'Measurement Technology',
+      items: [
+        'measurement-technology',
+        'measurement-technology/temperaturmessung-und-messgenauigkeit',
+      ],
+    },
     {
       type: 'category',
       label: 'WinCC OA',
