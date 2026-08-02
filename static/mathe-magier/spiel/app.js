@@ -269,11 +269,36 @@ function beginBattle(index){const m=monsters[index],s=stats();if(s.power<m.needP
 
 window.home=home;window.chooseDifficulty=chooseDifficulty;window.startGame=startGame;window.checkAnswer=checkAnswer;window.nextQuestion=nextQuestion;window.showTutorial=showTutorial;window.showHint=showHint;window.hero=hero;window.showShop=showShop;window.buy=buy;window.equip=equip;window.atlasMap=atlasMap;window.worldMap=worldMap;window.moveWorld=moveWorld;window.worldInteract=worldInteract;window.startBattle=startBattle;window.beginBattle=beginBattle;
 
+const authThrottleKey = 'matheMagierAuthThrottle';
+const authMaxFailures = 5;
+const authLockMs = 15 * 60 * 1000;
+
+function getAuthThrottle(){
+  try { return JSON.parse(localStorage.getItem(authThrottleKey) || '{}'); }
+  catch { return {}; }
+}
+function getAuthWaitMs(){
+  const waitMs = Math.max(0, Number(getAuthThrottle().lockedUntil || 0) - Date.now());
+  if (!waitMs) localStorage.removeItem(authThrottleKey);
+  return waitMs;
+}
+function addAuthFailure(){
+  const throttle = getAuthThrottle();
+  const failures = Number(throttle.failures || 0) + 1;
+  const lockedUntil = failures >= authMaxFailures ? Date.now() + authLockMs : 0;
+  localStorage.setItem(authThrottleKey, JSON.stringify({failures: lockedUntil ? 0 : failures, lockedUntil}));
+  return lockedUntil ? authLockMs : 0;
+}
+function resetAuthThrottle(){ localStorage.removeItem(authThrottleKey); }
+function authWaitMessage(waitMs){ return `Zu viele Versuche. Bitte warte noch ${Math.ceil(waitMs / 60000)} Minuten.`; }
+
 function showAccountGate(message=''){
   stopWorld();
   app.innerHTML = `<section class="access-gate"><div class="access-card"><div class="access-sparkle">&#10022;</div><p class="eyebrow">Dein Abenteuer auf jedem Gerät</p><h1>Mathe Magier</h1><p>Erstelle ein Konto oder melde dich an. Damit bleiben Gold, Items und Fortschritt sicher erhalten.</p><label for="accountEmail">E-Mail-Adresse</label><input id="accountEmail" class="account-input" type="email" autocomplete="email" inputmode="email" autofocus><label for="accountPassword">Passwort</label><input id="accountPassword" class="account-input" type="password" autocomplete="current-password" minlength="6"><div class="account-actions"><button id="signInButton" class="button">Anmelden</button><button id="createAccountButton" class="button secondary">Konto erstellen</button></div><p id="accountFeedback" class="access-feedback" role="alert">${message}</p><p class="account-note">Das Passwort braucht mindestens 6 Zeichen. Dein Spielstand gehört nur deinem Konto.</p></div></section>`;
   const email = document.querySelector('#accountEmail'), password = document.querySelector('#accountPassword'), feedback = document.querySelector('#accountFeedback');
   const submit = async create => {
+    const waitMs = getAuthWaitMs();
+    if (waitMs) { feedback.textContent = authWaitMessage(waitMs); return; }
     const cleanEmail = email.value.trim();
     if (!cleanEmail || !password.value) { feedback.textContent = 'Bitte E-Mail-Adresse und Passwort eingeben.'; return; }
     if (create && password.value.length < 6) { feedback.textContent = 'Das Passwort muss mindestens 6 Zeichen haben.'; return; }
@@ -281,12 +306,16 @@ function showAccountGate(message=''){
     try {
       if (create) await firebaseServices.createUserWithEmailAndPassword(firebaseServices.auth, cleanEmail, password.value);
       else await firebaseServices.signInWithEmailAndPassword(firebaseServices.auth, cleanEmail, password.value);
+      resetAuthThrottle();
     } catch (error) {
+      const lockMs = addAuthFailure();
+      if (lockMs) { feedback.textContent = authWaitMessage(lockMs); return; }
       const messages = {
         'auth/email-already-in-use':'Zu dieser E-Mail-Adresse gibt es bereits ein Konto. Bitte anmelden.',
         'auth/invalid-credential':'E-Mail-Adresse oder Passwort stimmt nicht.',
         'auth/invalid-email':'Bitte eine gültige E-Mail-Adresse eingeben.',
         'auth/weak-password':'Bitte ein Passwort mit mindestens 6 Zeichen wählen.',
+        'auth/too-many-requests':'Zu viele Anfragen. Bitte versuche es später erneut.',
       };
       feedback.textContent = messages[error.code] || 'Die Anmeldung hat nicht funktioniert. Bitte versuche es noch einmal.';
     }
