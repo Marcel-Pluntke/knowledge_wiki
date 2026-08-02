@@ -10,6 +10,16 @@ export default function MatheMagierPage() {
   const [fullscreenError, setFullscreenError] = useState('');
 
   async function playFullscreen() {
+    const userAgent = navigator.userAgent;
+    const isIphoneSafari = /iP(ad|hone|od)/.test(userAgent)
+      && /Safari/.test(userAgent)
+      && !/CriOS|FxiOS|EdgiOS/.test(userAgent);
+
+    if (isIphoneSafari) {
+      window.location.assign(gameUrl);
+      return;
+    }
+
     const frame = frameRef.current;
     if (!frame?.requestFullscreen) {
       setFullscreenError('Dein Browser unterstützt den Vollbildmodus hier leider nicht.');
@@ -30,7 +40,7 @@ export default function MatheMagierPage() {
         <section className={styles.intro}>
           <h1>Mathe Magier</h1>
           <p>Löse Bruchaufgaben, sammle Ausrüstung und besiege die Bosse der Brüche-Burg.</p>
-          <button className="button button--primary" type="button" onClick={playFullscreen}>Vollbild spielen</button>
+          <button className="button button--primary" type="button" onClick={playFullscreen}>Vollbild / ohne Wiki spielen</button>
           {fullscreenError && <p className={styles.fullscreenError} role="status">{fullscreenError}</p>}
         </section>
         <iframe ref={frameRef} className={styles.frame} src={gameUrl} title="Mathe Magier – Brüche-Abenteuer" allow="fullscreen" allowFullScreen />
