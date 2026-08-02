@@ -76,6 +76,7 @@ const config: Config = {
           label: 'Topics',
         },
         {to: '/blog', label: 'Blog', position: 'left'},
+        {to: '/mathe-magier', label: 'Mathe Magier', position: 'left'},
         {
           href: 'https://github.com/Marcel-Pluntke/knowledge_wiki',
           label: 'GitHub',

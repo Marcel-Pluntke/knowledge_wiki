@@ -1,0 +1,46 @@
+.page {
+  min-height: calc(100vh - 60px);
+  padding: 2rem 0 3rem;
+  background: radial-gradient(circle at 50% 0, #e8e1ff 0, transparent 34%);
+}
+
+[data-theme='dark'] .page {
+  background: radial-gradient(circle at 50% 0, #312852 0, transparent 34%);
+}
+
+.intro {
+  max-width: 980px;
+  margin: 0 auto 1rem;
+  padding: 0 1rem;
+}
+
+.intro h1 {
+  margin-bottom: .35rem;
+}
+
+.intro p {
+  margin: 0;
+}
+
+.frame {
+  display: block;
+  width: min(1180px, calc(100% - 2rem));
+  height: max(780px, calc(100vh - 130px));
+  margin: 0 auto;
+  border: 0;
+  border-radius: 20px;
+  background: #17142f;
+  box-shadow: 0 20px 50px rgb(26 16 55 / 28%);
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding-top: 1rem;
+  }
+
+  .frame {
+    width: 100%;
+    height: max(760px, calc(100vh - 80px));
+    border-radius: 0;
+  }
+}
