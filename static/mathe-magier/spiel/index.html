@@ -9,15 +9,39 @@
       const gameAssetBase = window.location.pathname.endsWith('/')
         ? window.location.pathname
         : `${window.location.pathname}/`;
-      document.write(`<link rel="stylesheet" href="${gameAssetBase}style.css?v=horizont-quest-20260802" />`);
+      document.write(`<link rel="stylesheet" href="${gameAssetBase}style.css?v=horizont-quest-20260802" /><link rel="stylesheet" href="${gameAssetBase}account.css?v=cloud-save-20260802" />`);
     </script>
   </head>
   <body>
     <div class="stars"></div>
     <main id="app" class="app-shell"></main>
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js';
+      import { createUserWithEmailAndPassword, getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js';
+      import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js';
+
+      // Diese Konfiguration identifiziert nur die öffentliche Web-App. Die
+      // eigentlichen Spielstände werden durch Firebase-Regeln pro Konto geschützt.
+      const firebaseConfig = {
+        apiKey: 'AIzaSyC-sG7TSHjT6uCP437sWIMPR4bOCGlAA5w',
+        authDomain: 'trim-attic-422212-p0.firebaseapp.com',
+        projectId: 'trim-attic-422212-p0',
+        storageBucket: 'trim-attic-422212-p0.firebasestorage.app',
+        messagingSenderId: '1070084446234',
+        appId: '1:1070084446234:web:783a501ff2f77b520b19a3',
+      };
+
+      const firebaseApp = initializeApp(firebaseConfig);
+      window.matheMagierFirebase = {
+        auth: getAuth(firebaseApp), db: getFirestore(firebaseApp),
+        createUserWithEmailAndPassword, doc, getDoc, onAuthStateChanged,
+        serverTimestamp, setDoc, signInWithEmailAndPassword, signOut,
+      };
+      window.dispatchEvent(new Event('mathe-magier-firebase-ready'));
+    </script>
     <script>
       const gameScript = document.createElement('script');
-      gameScript.src = `${gameAssetBase}app.js?v=horizont-quest-20260802`;
+      gameScript.src = `${gameAssetBase}app.js?v=cloud-save-20260802`;
       document.body.append(gameScript);
     </script>
   </body>

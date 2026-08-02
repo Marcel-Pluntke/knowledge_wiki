@@ -57,8 +57,10 @@ const ranks = [
 ];
 const defaultData = {gold:0, completed:0, rankXp:0, owned:[], equipped:{}, cleared:[], world:{zone:0,x:110,y:405}};
 const app = document.querySelector('#app');
-let data = normalize(JSON.parse(localStorage.getItem('matheMagier') || '{}'));
+const localSaveKey = 'matheMagier';
+let data = normalize(JSON.parse(localStorage.getItem(localSaveKey) || '{}'));
 let game = null, worldActive = false, worldFrame = null, keyHandler = null, dragState = null, dragGhost = null;
+let currentUser = null, firebaseServices = null, cloudSaveTimer = null, appStarted = false;
 
 function normalize(saved) {
   const merged = {...defaultData, ...saved, world:{...defaultData.world,...saved.world}};
@@ -77,13 +79,45 @@ function normalize(saved) {
   merged.rankXp=hasSavedRank?Math.max(completed,Number(saved.rankXp)):completed+merged.cleared.reduce((sum,index)=>sum+monsters[index].rankBonus,0);
   return merged;
 }
-const save = () => localStorage.setItem('matheMagier', JSON.stringify(data));
+function save(){
+  localStorage.setItem(localSaveKey, JSON.stringify(data));
+  if (!currentUser || !firebaseServices) return;
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(saveToCloud, 450);
+}
+
+async function saveToCloud(){
+  if (!currentUser || !firebaseServices) return;
+  try {
+    await firebaseServices.setDoc(
+      firebaseServices.doc(firebaseServices.db, 'players', currentUser.uid),
+      {game:data, updatedAt:firebaseServices.serverTimestamp(), version:1},
+      {merge:true},
+    );
+  } catch (error) {
+    console.warn('Spielstand konnte gerade nicht in die Wolke gespeichert werden.', error);
+  }
+}
 const gcd = (a,b) => b ? gcd(b,a%b) : Math.abs(a);
 const simplify = f => {const sign=f.d<0?-1:1,g=gcd(f.n,f.d);return {n:sign*f.n/g,d:Math.abs(f.d/g)}};
 const rand = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
 const fmt = f => f.d===1?String(f.n):`${f.n}/${f.d}`;
 const fractionHtml = f => f.d===1?`<span class="whole-number">${f.n}</span>`:`<span class="stacked-fraction"><span>${f.n}</span><span>${f.d}</span></span>`;
-function show(html) { stopWorld(); app.innerHTML=html; requestAnimationFrame(paintSpriteCanvases); }
+function show(html) {
+  stopWorld();
+  app.innerHTML=html;
+  if (currentUser) {
+    const actions = app.querySelector('.top-actions');
+    if (actions) {
+      const signOutButton = document.createElement('button');
+      signOutButton.className = 'map-link sign-out-link';
+      signOutButton.textContent = 'Abmelden';
+      signOutButton.addEventListener('click', signOutPlayer);
+      actions.append(signOutButton);
+    }
+  }
+  requestAnimationFrame(paintSpriteCanvases);
+}
 const topbar = () => {const r=rankInfo();return `<header class="topbar"><button class="brand brand-button" onclick="home()"><span class="brand-mark">✦</span>Mathe Magier</button><div class="top-actions"><button class="rank-badge" onclick="home()">Rang ${r.rank} · ${r.title}</button><button class="map-link" onclick="atlasMap()">🗺️ Große Karte</button><div class="coins">🪙 ${data.gold}</div></div></header>`};
 const toast = text => {const el=document.createElement('div');el.className='toast';el.textContent=text;document.body.append(el);requestAnimationFrame(()=>el.classList.add('show'));setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),300)},3100)};
 const bar = f => `<div class="fraction-viz">${Array.from({length:Math.min(f.d,12)},(_,i)=>`<span class="fraction-piece ${i<Math.min(f.n,f.d)?'filled':''}"></span>`).join('')}</div>`;
@@ -235,6 +269,69 @@ function beginBattle(index){const m=monsters[index],s=stats();if(s.power<m.needP
 
 window.home=home;window.chooseDifficulty=chooseDifficulty;window.startGame=startGame;window.checkAnswer=checkAnswer;window.nextQuestion=nextQuestion;window.showTutorial=showTutorial;window.showHint=showHint;window.hero=hero;window.showShop=showShop;window.buy=buy;window.equip=equip;window.atlasMap=atlasMap;window.worldMap=worldMap;window.moveWorld=moveWorld;window.worldInteract=worldInteract;window.startBattle=startBattle;window.beginBattle=beginBattle;
 
+function showAccountGate(message=''){
+  stopWorld();
+  app.innerHTML = `<section class="access-gate"><div class="access-card"><div class="access-sparkle">&#10022;</div><p class="eyebrow">Dein Abenteuer auf jedem Gerät</p><h1>Mathe Magier</h1><p>Erstelle ein Konto oder melde dich an. Damit bleiben Gold, Items und Fortschritt sicher erhalten.</p><label for="accountEmail">E-Mail-Adresse</label><input id="accountEmail" class="account-input" type="email" autocomplete="email" inputmode="email" autofocus><label for="accountPassword">Passwort</label><input id="accountPassword" class="account-input" type="password" autocomplete="current-password" minlength="6"><div class="account-actions"><button id="signInButton" class="button">Anmelden</button><button id="createAccountButton" class="button secondary">Konto erstellen</button></div><p id="accountFeedback" class="access-feedback" role="alert">${message}</p><p class="account-note">Das Passwort braucht mindestens 6 Zeichen. Dein Spielstand gehört nur deinem Konto.</p></div></section>`;
+  const email = document.querySelector('#accountEmail'), password = document.querySelector('#accountPassword'), feedback = document.querySelector('#accountFeedback');
+  const submit = async create => {
+    const cleanEmail = email.value.trim();
+    if (!cleanEmail || !password.value) { feedback.textContent = 'Bitte E-Mail-Adresse und Passwort eingeben.'; return; }
+    if (create && password.value.length < 6) { feedback.textContent = 'Das Passwort muss mindestens 6 Zeichen haben.'; return; }
+    feedback.textContent = create ? 'Konto wird erstellt ...' : 'Anmeldung läuft ...';
+    try {
+      if (create) await firebaseServices.createUserWithEmailAndPassword(firebaseServices.auth, cleanEmail, password.value);
+      else await firebaseServices.signInWithEmailAndPassword(firebaseServices.auth, cleanEmail, password.value);
+    } catch (error) {
+      const messages = {
+        'auth/email-already-in-use':'Zu dieser E-Mail-Adresse gibt es bereits ein Konto. Bitte anmelden.',
+        'auth/invalid-credential':'E-Mail-Adresse oder Passwort stimmt nicht.',
+        'auth/invalid-email':'Bitte eine gültige E-Mail-Adresse eingeben.',
+        'auth/weak-password':'Bitte ein Passwort mit mindestens 6 Zeichen wählen.',
+      };
+      feedback.textContent = messages[error.code] || 'Die Anmeldung hat nicht funktioniert. Bitte versuche es noch einmal.';
+    }
+  };
+  document.querySelector('#signInButton').addEventListener('click', () => submit(false));
+  document.querySelector('#createAccountButton').addEventListener('click', () => submit(true));
+  password.addEventListener('keydown', event => { if (event.key === 'Enter') submit(false); });
+}
+
+async function loadCloudSave(user){
+  app.innerHTML = `<section class="access-gate"><div class="access-card"><div class="access-sparkle">&#10022;</div><h1>Spielstand wird geladen ...</h1><p>Wir holen dein Gold, deine Items und deinen Fortschritt.</p></div></section>`;
+  try {
+    const playerRef = firebaseServices.doc(firebaseServices.db, 'players', user.uid);
+    const saved = await firebaseServices.getDoc(playerRef);
+    if (saved.exists() && saved.data().game) {
+      data = normalize(saved.data().game);
+      localStorage.setItem(localSaveKey, JSON.stringify(data));
+    } else {
+      await saveToCloud();
+    }
+    if (sessionStorage.getItem(accessSessionKey) === 'granted') home();
+    else showAccessGate();
+  } catch (error) {
+    console.warn('Cloud-Spielstand konnte nicht geladen werden.', error);
+    showAccountGate('Der Cloud-Spielstand ist noch nicht erreichbar. Bitte gleich noch einmal anmelden.');
+  }
+}
+
+function startCloudApp(){
+  if (appStarted || !window.matheMagierFirebase) return;
+  appStarted = true;
+  firebaseServices = window.matheMagierFirebase;
+  firebaseServices.onAuthStateChanged(firebaseServices.auth, user => {
+    currentUser = user;
+    if (user) loadCloudSave(user);
+    else showAccountGate();
+  });
+}
+
+async function signOutPlayer(){
+  if (firebaseServices) await firebaseServices.signOut(firebaseServices.auth);
+}
+
+window.signOutPlayer = signOutPlayer;
+
 const accessSessionKey = 'matheMagierAccess';
 const accessCode = '18112015';
 
@@ -257,5 +354,5 @@ function showAccessGate(){
   input.focus();
 }
 
-if(sessionStorage.getItem(accessSessionKey) === 'granted') home();
-else showAccessGate();
+if (window.matheMagierFirebase) startCloudApp();
+else window.addEventListener('mathe-magier-firebase-ready', startCloudApp, {once:true});
