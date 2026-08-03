@@ -25,11 +25,23 @@ function chapterSelect() {
           </div>
           <div class="chapter-wizard">🧙‍♂️</div>
         </div>
-        <button class="button chapter-button" onclick="fractionChapterHome()">Abenteuer starten ›</button>
+        <button class="button chapter-button" onclick="fractionChapterHome()">Magier-Abenteuer starten ›</button>
+      </article>
+
+      <article class="chapter-card chapter-card-decimal">
+        <div class="chapter-badge">2</div>
+        <h2>Dezimalzahlen</h2>
+        <p>Stellenwerte, Rechnen und Komma-Duelle!</p>
+        <div class="chapter-art chapter-decimal-art" aria-hidden="true">
+          <div class="chapter-decimal-number">12,75</div>
+          <div class="chapter-decimal-equation">3,5 + 1,25 = 4,75</div>
+          <div class="chapter-warrior">⚔️🛡️</div>
+        </div>
+        <button class="button chapter-button chapter-decimal-button" onclick="decimalHome()">Krieger-Abenteuer starten ›</button>
       </article>
 
       <article class="chapter-card chapter-card-disabled" aria-disabled="true">
-        <div class="chapter-badge">2</div>
+        <div class="chapter-badge">3</div>
         <h2>Neue Abenteuer folgen</h2>
         <p>Weitere Mathe-Kapitel bald verfügbar.</p>
         <div class="chapter-art" aria-hidden="true">
@@ -40,10 +52,11 @@ function chapterSelect() {
       </article>
     </section>
 
-    <footer class="chapter-footer">🔮 Löse Aufgaben, sammle Gold und werde zum größten MatheMagier! ⭐</footer>
+    <footer class="chapter-footer">🔮 Löse Aufgaben, sammle Gold und entwickle alle deine Helden! ⭐</footer>
   </section>`);
 }
 
 home = chapterSelect;
 window.home = chapterSelect;
+window.chapterSelect = chapterSelect;
 window.fractionChapterHome = fractionChapterHome;
