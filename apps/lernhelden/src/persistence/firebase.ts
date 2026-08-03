@@ -44,6 +44,14 @@ const parse = <T,>(value: string | null): T | null => {
   try { return value ? JSON.parse(value) as T : null; } catch { return null; }
 };
 
+export function firebaseErrorMessage(error: unknown) {
+  const code = (error as {code?: string})?.code;
+  if (code === 'permission-denied') return 'Cloud-Zugriff wurde von Firebase abgelehnt. Die Firestore-Regeln müssen veröffentlicht werden.';
+  if (code === 'unavailable' || code === 'deadline-exceeded') return 'Keine Verbindung zur Cloud. Dein lokaler Spielstand bleibt erhalten.';
+  if (code === 'unauthenticated') return 'Die Anmeldung ist abgelaufen. Bitte melde dich erneut an.';
+  return 'Die Cloud-Synchronisierung ist gerade nicht verfügbar. Dein lokaler Spielstand bleibt erhalten.';
+}
+
 export class FirebaseSaveRepository implements SaveRepository {
   constructor(private readonly user: User) {}
 
@@ -93,11 +101,13 @@ export class FirebaseSaveRepository implements SaveRepository {
       const localSource = definition.id === 'vocabulary' ? localVocabulary : definition.id === 'decimals' ? localMath?.decimal : localMath;
       const source = (cloudSource ?? localSource) as Record<string, unknown> | undefined;
       const migrated = migrateAdventure(source, definition.id);
-      await this.saveAdventure(migrated);
+      try { await this.saveAdventure(migrated); }
+      catch { localStorage.setItem(adventureCacheKey(definition.id), JSON.stringify(migrated)); }
       if (!profile.migratedAdventures.includes(definition.id)) profile = {...profile, migratedAdventures:[...profile.migratedAdventures, definition.id]};
     }
     profile = {...profile, clientUpdatedAt:Date.now()};
-    await this.saveProfile(profile);
+    try { await this.saveProfile(profile); }
+    catch { localStorage.setItem(profileCacheKey, JSON.stringify(profile)); }
     return profile;
   }
 }
