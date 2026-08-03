@@ -1,6 +1,6 @@
 export type AdventureId = 'vocabulary' | 'decimals' | 'fractions';
 export type ReleaseStatus = 'hidden' | 'beta' | 'released';
-export type InputKind = 'choice' | 'decimal' | 'fraction';
+export type InputKind = 'choice' | 'decimal' | 'fraction' | 'text';
 export type EquipmentSlot = string;
 
 export interface SpriteRef {
@@ -83,6 +83,46 @@ export interface EnemyDefinition {
   sprite: SpriteRef;
 }
 
+export interface CampaignMission {
+  id: string;
+  title: string;
+  modeId: string;
+  reward: number;
+  xp: number;
+}
+
+export interface CampaignChapter {
+  id: string;
+  index: number;
+  title: string;
+  topic: string;
+  itemTier: number;
+  missions: CampaignMission[];
+  eliteEnemyId: string;
+  bossEnemyId: string;
+  chestId: string;
+  minimumPower: number;
+  minimumDefense: number;
+  reward: number;
+}
+
+export interface MasteryRecord {
+  correct: number;
+  wrong: number;
+  box: 1 | 2 | 3 | 4 | 5;
+  dueAt: number;
+}
+
+export interface CampaignProgress {
+  completedMissionIds: string[];
+  defeatedEliteIds: string[];
+  defeatedBossIds: string[];
+  openedChestIds: string[];
+  collectionIds: string[];
+  claimedDailyKeys: string[];
+  claimedWeeklyKeys: string[];
+}
+
 export interface LearningMode {
   id: string;
   title: string;
@@ -98,6 +138,7 @@ export interface Question {
   numerator?: number;
   denominator?: number;
   category?: string;
+  learningKey?: string;
   hintSteps: string[];
 }
 
@@ -105,6 +146,8 @@ export interface QuestionContext {
   modeId: string;
   sequence: number;
   random: () => number;
+  chapter?: number;
+  mastery?: Record<string, MasteryRecord>;
 }
 
 export interface QuestionProvider {
@@ -144,6 +187,7 @@ export interface AdventureDefinition {
   slots: Record<EquipmentSlot, string>;
   items: ItemDefinition[];
   enemies: EnemyDefinition[];
+  campaign?: CampaignChapter[];
   modes: LearningMode[];
   questionProvider: QuestionProvider;
   world: WorldDefinition;
@@ -151,7 +195,7 @@ export interface AdventureDefinition {
 }
 
 export interface AdventureSave {
-  schemaVersion: 1;
+  schemaVersion: 2;
   adventureId: AdventureId;
   revision: number;
   currency: number;
@@ -159,9 +203,12 @@ export interface AdventureSave {
   completed: number;
   ownedItemIds: string[];
   equippedBySlot: Record<EquipmentSlot, string>;
+  itemUpgradeById: Record<string, 0 | 1 | 2 | 3>;
   clearedEnemyIds: string[];
   world: {mapId: string; x: number; y: number};
   stats: {correct: number; wrong: number; bestStreak: number};
+  campaign: CampaignProgress;
+  masteryByKey: Record<string, MasteryRecord>;
   clientUpdatedAt: number;
 }
 

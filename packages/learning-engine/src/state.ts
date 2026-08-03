@@ -21,7 +21,7 @@ export function createProfile(displayName = '', avatarPresetId = 'avatar-1'): Pl
 
 export function createAdventureSave(definition: AdventureDefinition): AdventureSave {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     adventureId: definition.id,
     revision: 0,
     currency: 0,
@@ -29,9 +29,12 @@ export function createAdventureSave(definition: AdventureDefinition): AdventureS
     completed: 0,
     ownedItemIds: [],
     equippedBySlot: {},
+    itemUpgradeById: {},
     clearedEnemyIds: [],
     world: {mapId: definition.world.id, ...definition.world.start},
     stats: {correct: 0, wrong: 0, bestStreak: 0},
+    campaign: {completedMissionIds: [], defeatedEliteIds: [], defeatedBossIds: [], openedChestIds: [], collectionIds: [], claimedDailyKeys: [], claimedWeeklyKeys: []},
+    masteryByKey: {},
     clientUpdatedAt: Date.now(),
   };
 }
@@ -48,6 +51,22 @@ export function normalizeAdventureSave(value: unknown, definition: AdventureDefi
     const item = definition.items.find(candidate => candidate.id === id);
     if (item?.slot === slot && owned.includes(id)) equipped[slot] = id;
   });
+  const upgrades: Record<string, 0 | 1 | 2 | 3> = {};
+  Object.entries(raw.itemUpgradeById ?? {}).forEach(([id, level]) => {
+    if (owned.includes(id) && Number.isInteger(level) && Number(level) >= 0 && Number(level) <= 3) upgrades[id] = Number(level) as 0 | 1 | 2 | 3;
+  });
+  const campaignIds = new Set((definition.campaign ?? []).flatMap(chapter => [chapter.chestId, chapter.eliteEnemyId, chapter.bossEnemyId, ...chapter.missions.map(mission => mission.id)]));
+  const legacyTier = Math.max(0, ...owned.map(id => definition.items.find(item => item.id === id)?.tier ?? 0));
+  const earlyMissions = (definition.campaign ?? []).filter(chapter => chapter.itemTier <= legacyTier).flatMap(chapter => chapter.missions.map(mission => mission.id));
+  const rawCampaign = raw.campaign;
+  const list = (values: unknown, valid?: Set<string>) => [...new Set(Array.isArray(values) ? values.filter((id): id is string => typeof id === 'string' && (!valid || valid.has(id))) : [])];
+  const mastery: AdventureSave['masteryByKey'] = {};
+  Object.entries(raw.masteryByKey ?? {}).forEach(([key, record]) => {
+    if (!record || typeof record !== 'object') return;
+    const value = record as Partial<AdventureSave['masteryByKey'][string]>;
+    const box = Math.min(5, Math.max(1, Number(value.box) || 1)) as 1 | 2 | 3 | 4 | 5;
+    mastery[key] = {correct: Math.max(0, Number(value.correct) || 0), wrong: Math.max(0, Number(value.wrong) || 0), box, dueAt: Math.max(0, Number(value.dueAt) || 0)};
+  });
   return {
     ...base,
     revision: Math.max(0, Number(raw.revision) || 0),
@@ -56,6 +75,7 @@ export function normalizeAdventureSave(value: unknown, definition: AdventureDefi
     completed: Math.max(0, Number(raw.completed) || 0),
     ownedItemIds: owned,
     equippedBySlot: equipped,
+    itemUpgradeById: upgrades,
     clearedEnemyIds: [...new Set(Array.isArray(raw.clearedEnemyIds) ? raw.clearedEnemyIds.filter(id => enemyIds.has(id)) : [])],
     world: {
       mapId: definition.world.id,
@@ -67,6 +87,16 @@ export function normalizeAdventureSave(value: unknown, definition: AdventureDefi
       wrong: Math.max(0, Number(raw.stats?.wrong) || 0),
       bestStreak: Math.max(0, Number(raw.stats?.bestStreak) || 0),
     },
+    campaign: {
+      completedMissionIds: list(rawCampaign?.completedMissionIds, campaignIds).length ? list(rawCampaign?.completedMissionIds, campaignIds) : earlyMissions,
+      defeatedEliteIds: list(rawCampaign?.defeatedEliteIds, enemyIds),
+      defeatedBossIds: list(rawCampaign?.defeatedBossIds, enemyIds),
+      openedChestIds: list(rawCampaign?.openedChestIds, campaignIds),
+      collectionIds: list(rawCampaign?.collectionIds),
+      claimedDailyKeys: list(rawCampaign?.claimedDailyKeys),
+      claimedWeeklyKeys: list(rawCampaign?.claimedWeeklyKeys),
+    },
+    masteryByKey: mastery,
     clientUpdatedAt: Number(raw.clientUpdatedAt) || Date.now(),
   };
 }
@@ -79,11 +109,14 @@ export function equipmentStats(save: AdventureSave, definition: AdventureDefinit
   return Object.values(save.equippedBySlot)
     .map(id => definition.items.find(item => item.id === id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
-    .reduce((sum, item) => ({
-      power: sum.power + item.power,
-      defense: sum.defense + item.defense,
-      luck: sum.luck + item.luck,
-    }), {power: 0, defense: 0, luck: 0});
+    .reduce((sum, item) => {
+      const factor = 1 + (save.itemUpgradeById[item.id] ?? 0) * 0.1;
+      return {
+      power: sum.power + Math.floor(item.power * factor),
+      defense: sum.defense + Math.floor(item.defense * factor),
+      luck: sum.luck + Math.floor(item.luck * factor),
+      };
+    }, {power: 0, defense: 0, luck: 0});
 }
 
 export function touchSave(save: AdventureSave): AdventureSave {

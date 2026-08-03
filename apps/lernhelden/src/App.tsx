@@ -1,13 +1,13 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import type {AdventureDefinition, AdventureId, AdventureSave, BattleState, PlayerProfile, Question} from '@lernhelden/engine';
-import {applyAchievementEvent, battleAttacks, buyItem, createAdventureSave, createBattle, createProfile, discardItem, equipItem, equipmentStats, nextTurn, normalizeAdventureSave, rankFor, resolveCorrect, resolveCounter, selectAttack, touchSave, unequipSlot} from '@lernhelden/engine';
+import {applyAchievementEvent, battleAttacks, bossGate, buyItem, chapterComplete, chapterUnlocked, completeMission, createAdventureSave, createBattle, createProfile, defeatCampaignEnemy, discardItem, equipItem, equipmentStats, nextTurn, normalizeAdventureSave, openCampaignChest, rankFor, recordMastery, resolveCorrect, resolveCounter, selectAttack, touchSave, unequipSlot, upgradeCost, upgradeItem} from '@lernhelden/engine';
 import {adventureById, adventures} from './adventures';
 import {avatarSprite, Sprite, spriteUrl, uiSprites} from './components/Sprite';
 import {ItemSprite, MerchantPortrait} from './components/PixelArt';
 import {FirebaseSaveRepository, login, logout, observeUser, register} from './persistence/firebase';
 import {LocalSaveRepository} from './persistence/local';
 
-type Screen = 'home'|'profile'|'adventure'|'inventory'|'shop'|'world'|'achievements'|'settings'|'battle';
+type Screen = 'home'|'profile'|'adventure'|'campaign'|'inventory'|'shop'|'world'|'achievements'|'settings'|'battle';
 type Route = {screen:Screen; adventureId?:AdventureId};
 
 function readRoute():Route {
@@ -72,7 +72,9 @@ export function App(){
       {route.screen==='profile'&&<ProfileEditor profile={profile} onSave={saveProfile}/>}
       {route.screen==='achievements'&&<Achievements profile={profile}/>}
       {route.screen==='settings'&&<Settings profile={profile} onSave={saveProfile}/>}
+      {adventure&&save&&route.screen==='adventure'&&<button className="campaign-shortcut" onClick={()=>go(`/adventure/${adventure.id}/campaign`)}>24-Wochen-Kampagne öffnen</button>}
       {adventure&&save&&route.screen==='adventure'&&<AdventureHome adventure={adventure} save={save} profile={profile}/>}
+      {adventure&&save&&route.screen==='campaign'&&<Campaign adventure={adventure} save={save} onSave={saveAdventure}/>}
       {adventure&&save&&route.screen==='inventory'&&<Inventory adventure={adventure} save={save} profile={profile} onSave={saveAdventure} onEvent={type=>dispatchEvent(adventure,type)}/>}
       {adventure&&save&&route.screen==='shop'&&<Shop adventure={adventure} save={save} onSave={saveAdventure} onEvent={type=>dispatchEvent(adventure,type)}/>}
       {adventure&&save&&route.screen==='world'&&<World adventure={adventure} save={save} profile={profile} onSave={saveAdventure}/>}
@@ -102,6 +104,12 @@ function Avatar({profile,size=120}:{profile:PlayerProfile;size?:number}){const i
 
 function AdventureHome({adventure,save,profile}:{adventure:AdventureDefinition;save:AdventureSave;profile:PlayerProfile}){const stats=equipmentStats(save,adventure),rank=rankFor(adventure,save.xp);return <div className="page"><button className="back" onClick={()=>go('/home')}>← Alle Abenteuer</button><section className="adventure-hero"><div><p className="eyebrow">{rank.title}</p><h1>{adventure.title}</h1><p>{adventure.subtitle}</p><div className="stats"><span>{save.completed}<small>Aufgaben</small></span><span>{stats.power}<small>Stärke</small></span><span>{stats.defense}<small>Schutz</small></span></div></div><Avatar profile={profile} size={150}/></section><h2>Wähle dein Training</h2><section className="mode-grid">{adventure.modes.map(mode=><article key={mode.id}><h3>{mode.title}</h3><p>{mode.description}</p><button onClick={()=>{sessionStorage.setItem(`lernhelden:mode:${adventure.id}`,mode.id);go(`/adventure/${adventure.id}/battle`)}}>Training starten</button></article>)}</section><section className="action-grid"><button onClick={()=>go(`/adventure/${adventure.id}/inventory`)}><Sprite sprite={uiSprites.chest} size={54}/>Inventar</button><button onClick={()=>go(`/adventure/${adventure.id}/shop`)}><Sprite sprite={uiSprites.shop} size={54}/>Shop</button><button onClick={()=>go(`/adventure/${adventure.id}/world`)}><Sprite sprite={uiSprites.map} size={54}/>Weltkarte</button></section></div>}
 
+function Campaign({adventure,save,onSave}:{adventure:AdventureDefinition;save:AdventureSave;onSave:(save:AdventureSave)=>Promise<void>}){
+  const stats=equipmentStats(save,adventure);
+  const launch=(modeId:string,chapter:number,missionId?:string,target?:'elite'|'boss')=>{sessionStorage.setItem(`lernhelden:mode:${adventure.id}`,modeId);sessionStorage.setItem(`lernhelden:campaign:${adventure.id}`,JSON.stringify({chapter,missionId,target}));go(`/adventure/${adventure.id}/battle`)};
+  return <div className="page"><button className="back" onClick={()=>go(`/adventure/${adventure.id}`)}>← Zurück</button><p className="eyebrow">24 Wochen · 12 Kapitel · keine Kalender-Sperre</p><h1>Deine Langzeitkampagne</h1><p>Meisterschaft und Fehlerwiederholung begleiten jedes Lernziel. Tages- und Wochenaufträge sind Bonus ohne Streak-Druck.</p><section className="campaign-grid">{(adventure.campaign ?? []).map(chapter=>{const unlocked=chapterUnlocked(save,chapter),done=chapterComplete(save,chapter),gate=bossGate(save,chapter,stats);return <article className={!unlocked?'locked':''} key={chapter.id}><small>Kapitel {chapter.index} · Itemstufe {chapter.itemTier}</small><h2>{chapter.topic}</h2><p>Boss: Stärke {chapter.minimumPower} · Schutz {chapter.minimumDefense}</p><div className="mission-list">{chapter.missions.map(mission=><button disabled={!unlocked||save.campaign.completedMissionIds.includes(mission.id)} key={mission.id} onClick={()=>launch(mission.modeId,chapter.index,mission.id)}>{save.campaign.completedMissionIds.includes(mission.id)?'✓ ':''}{mission.title}</button>)}</div><button disabled={!done||save.campaign.defeatedEliteIds.includes(chapter.eliteEnemyId)} onClick={()=>launch(chapter.missions[0].modeId,chapter.index,undefined,'elite')}>Elitekampf</button><button disabled={!gate||save.campaign.defeatedBossIds.includes(chapter.bossEnemyId)} onClick={()=>launch(chapter.missions[0].modeId,chapter.index,undefined,'boss')}>Kapitelboss</button><button disabled={!save.campaign.defeatedBossIds.includes(chapter.bossEnemyId)||save.campaign.openedChestIds.includes(chapter.chestId)} onClick={()=>void onSave(openCampaignChest(save,chapter))}>Schatztruhe +{chapter.reward}</button></article>})}</section></div>
+}
+
 function Inventory({adventure,save,profile,onSave,onEvent}:{adventure:AdventureDefinition;save:AdventureSave;profile:PlayerProfile;onSave:(save:AdventureSave)=>Promise<void>;onEvent:(type:'item-equipped')=>Promise<void>}){
   const [selected,setSelected]=useState<string|null>(null);const stats=equipmentStats(save,adventure);
   const equip=async(itemId:string,slot:string)=>{const item=adventure.items.find(candidate=>candidate.id===itemId);if(!item||item.slot!==slot)return;await onSave(equipItem(save,adventure,itemId));await onEvent('item-equipped');setSelected(null)};
@@ -116,11 +124,13 @@ function Shop({adventure,save,onSave,onEvent}:{adventure:AdventureDefinition;sav
 
 function Battle({adventure,initialSave,profile,onSave,onProfile}:{adventure:AdventureDefinition;initialSave:AdventureSave;profile:PlayerProfile;onSave:(save:AdventureSave)=>Promise<void>;onProfile:(profile:PlayerProfile)=>Promise<void>}){
   const modeId=sessionStorage.getItem(`lernhelden:mode:${adventure.id}`)??adventure.modes[0].id;
-  const enemy=adventure.enemies.find(candidate=>!initialSave.clearedEnemyIds.includes(candidate.id))??adventure.enemies[adventure.enemies.length-1];
+  const campaignRun=JSON.parse(sessionStorage.getItem(`lernhelden:campaign:${adventure.id}`)??'null') as {chapter:number;missionId?:string;target?:'elite'|'boss'}|null;
+  const chapter=campaignRun?(adventure.campaign ?? [])[campaignRun.chapter-1]:undefined;
+  const enemy=chapter&&campaignRun?.target?adventure.enemies.find(candidate=>candidate.id===(campaignRun.target==='boss'?chapter.bossEnemyId:chapter.eliteEnemyId))??adventure.enemies[0]:adventure.enemies.find(candidate=>!initialSave.clearedEnemyIds.includes(candidate.id))??adventure.enemies[adventure.enemies.length-1];
   const stats=equipmentStats(initialSave,adventure);
   const [battle,setBattle]=useState<BattleState>(()=>createBattle(enemy,stats.defense));
   const [save,setSave]=useState(initialSave);const [question,setQuestion]=useState<Question|null>(null);const [answer,setAnswer]=useState('');const [feedback,setFeedback]=useState('');const [sequence,setSequence]=useState(0);
-  const newQuestion=()=>{const nextSequence=sequence+1;setSequence(nextSequence);setQuestion(adventure.questionProvider.next({modeId,sequence:nextSequence,random:Math.random}));setAnswer('');setFeedback('')};
+  const newQuestion=()=>{const nextSequence=sequence+1;setSequence(nextSequence);setQuestion(adventure.questionProvider.next({modeId,sequence:nextSequence,random:Math.random,chapter:chapter?.index,mastery:save.masteryByKey}));setAnswer('');setFeedback('')};
   const choose=(id:BattleState['selectedAttackId'])=>{const selected=selectAttack(battle,id);setBattle(selected);if(selected.phase==='question')newQuestion()};
   const persistEvent=async(next:AdventureSave,type:'answer-correct'|'answer-wrong'|'boss-defeated')=>{setSave(next);await onSave(next);await onProfile(applyAchievementEvent(profile,adventure,{type,adventureId:adventure.id}))};
   const submit=async()=>{

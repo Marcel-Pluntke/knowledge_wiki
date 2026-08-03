@@ -1,21 +1,23 @@
 import type {AdventureDefinition, Question, QuestionProvider} from '@lernhelden/engine';
 import words from './vocabulary-data.json';
-import {commonAchievements, createItems, ranks, shuffled, sprite} from './shared';
+import {commonAchievements, createCampaign, createItems, ranks, shuffled, sprite} from './shared';
 
 const provider: QuestionProvider = {
-  next({modeId, sequence, random}) {
-    const word = words[Math.floor(random() * words.length)];
+  next({modeId, sequence, random, mastery}) {
+    const due = words.filter(word => (mastery?.[`word-${word.en}`]?.dueAt ?? 0) <= Date.now());
+    const word = (due.length ? due : words)[Math.floor(random() * (due.length || words.length))];
     const sourceKey = modeId === 'en-de' ? 'en' : 'de';
     const targetKey = modeId === 'en-de' ? 'de' : 'en';
     const answer = word[targetKey];
     const wrong = shuffled(words.filter(candidate => candidate[targetKey] !== answer), random).slice(0, 3).map(candidate => candidate[targetKey]);
+    const spelling = modeId === 'spell';
     return {
       id: `vocabulary-${sequence}-${word.en}`,
-      inputKind: 'choice',
+      inputKind: spelling ? 'text' : 'choice',
       prompt: word[sourceKey],
-      choices: shuffled([answer, ...wrong], random),
+      choices: spelling ? undefined : shuffled([answer, ...wrong], random),
       answer,
-      category: word.category,
+      category: word.category, learningKey:`word-${word.en}`,
       hintSteps: [`Gesucht ist die Übersetzung von „${word[sourceKey]}“.`, `Die richtige Antwort lautet „${answer}“.`],
     } satisfies Question;
   },
@@ -28,6 +30,7 @@ const itemNames = [
   'Ritterhelm','Silberschwert','Löwenschild','Plattenrüstung','Windstiefel',
   'Drachenhelm','Heldenklinge','Sternenschild','Königsrüstung','Blitzstiefel',
 ];
+const campaignContent = createCampaign('vocabulary', ['Sich vorstellen','Familie und Freunde','Schule','Zuhause','Freizeit','Tiere und Natur','Essen und Einkaufen','Stadt und Weg','Zeit und Alltag','Reisen','Gesundheit','Geschichten erzählen'], ['de-en','en-de','spell'], ['word-slime','translation-goblin','book-skeleton','language-troll','grammar-knight','vocabulary-dragon'], slots) as {campaign: NonNullable<AdventureDefinition['campaign']>; enemies: never[]};
 
 export const vocabularyAdventure: AdventureDefinition = {
   id:'vocabulary', title:'Vokabel Held', subtitle:'Deutsch und Englisch im Wortkampf', status:'released',
@@ -44,10 +47,12 @@ export const vocabularyAdventure: AdventureDefinition = {
     ['language-troll','Sprach-Troll','Bücherwald',180,16,175,16],
     ['grammar-knight','Grammatik-Ritter','Sprachburg',260,21,260,20],
     ['vocabulary-dragon','Vokabel-Drache','Sprachburg',380,27,420,28],
-  ].map(([id,name,place,hp,attack,reward,xp], index) => ({id:String(id),name:String(name),place:String(place),hp:Number(hp),attack:Number(attack),reward:Number(reward),xp:Number(xp),rule:index===1?'heal-on-miss':index===3?'armor-pierce':index===5?'fire':'normal',sprite:sprite(String(id),String(name))})),
+  ].map(([id,name,place,hp,attack,reward,xp], index) => ({id:String(id),name:String(name),place:String(place),hp:Number(hp),attack:Number(attack),reward:Number(reward),xp:Number(xp),rule:index===1?'heal-on-miss':index===3?'armor-pierce':index===5?'fire':'normal',sprite:sprite(String(id),String(name))})).concat(campaignContent.enemies) as AdventureDefinition['enemies'],
+  campaign:campaignContent.campaign,
   modes:[
     {id:'de-en',title:'Deutsch → Englisch',description:'Finde die englische Übersetzung.'},
     {id:'en-de',title:'Englisch → Deutsch',description:'Finde die deutsche Übersetzung.'},
+    {id:'spell',title:'Schreibwerkstatt',description:'Schreibe die Übersetzung selbst.'},
   ],
   questionProvider:provider,
   world:{id:'wordlands',width:960,height:540,start:{x:90,y:420},obstacles:[{x:270,y:120,width:130,height:75},{x:490,y:310,width:120,height:80},{x:690,y:120,width:120,height:70}],encounters:[{enemyId:'word-slime',x:230,y:390},{enemyId:'translation-goblin',x:430,y:210},{enemyId:'book-skeleton',x:650,y:390},{enemyId:'language-troll',x:820,y:190}],merchant:{x:120,y:120},chest:{x:820,y:420}},
