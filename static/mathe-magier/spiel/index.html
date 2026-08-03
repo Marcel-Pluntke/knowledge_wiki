@@ -9,7 +9,7 @@
       const gameAssetBase = window.location.pathname.endsWith('/')
         ? window.location.pathname
         : `${window.location.pathname}/`;
-      document.write(`<link rel="stylesheet" href="${gameAssetBase}style.css?v=touch-inventory-20260802" /><link rel="stylesheet" href="${gameAssetBase}account.css?v=cloud-save-20260802" /><link rel="stylesheet" href="${gameAssetBase}chapter-select.css?v=chapter-select-20260803" />`);
+      document.write(`<link rel="stylesheet" href="${gameAssetBase}style.css?v=touch-inventory-20260802" /><link rel="stylesheet" href="${gameAssetBase}account.css?v=cloud-save-20260802" /><link rel="stylesheet" href="${gameAssetBase}chapter-select.css?v=chapter-select-20260803" /><link rel="stylesheet" href="${gameAssetBase}chapter-select-extra.css?v=decimal-adventure-20260803" /><link rel="stylesheet" href="${gameAssetBase}decimal-adventure.css?v=decimal-adventure-20260803" />`);
     </script>
   </head>
   <body>
@@ -38,14 +38,18 @@
       window.dispatchEvent(new Event('mathe-magier-firebase-ready'));
     </script>
     <script>
-      const gameScript = document.createElement('script');
-      gameScript.src = `${gameAssetBase}app.js?v=chapter-select-20260803`;
-      gameScript.onload = () => {
-        const chapterScript = document.createElement('script');
-        chapterScript.src = `${gameAssetBase}chapter-select.js?v=chapter-select-20260803`;
-        document.body.append(chapterScript);
+      const loadClassicScript = (src, onload) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = onload;
+        document.body.append(script);
       };
-      document.body.append(gameScript);
+
+      loadClassicScript(`${gameAssetBase}app.js?v=decimal-adventure-20260803`, () => {
+        loadClassicScript(`${gameAssetBase}decimal-adventure.js?v=decimal-adventure-20260803`, () => {
+          loadClassicScript(`${gameAssetBase}chapter-select.js?v=decimal-adventure-20260803`);
+        });
+      });
     </script>
   </body>
 </html>
