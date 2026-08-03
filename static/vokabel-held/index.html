@@ -5,43 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#15233c" />
   <title>Vokabel Held</title>
-  <link rel="stylesheet" href="style.css?v=cloud-save-20260803" />
-  <link rel="stylesheet" href="cloud-save.css?v=cloud-save-20260803" />
+  <link rel="stylesheet" href="style.css?v=bruch-ux-20260803" />
+  <link rel="stylesheet" href="cloud-save.css?v=bruch-ux-20260803" />
+  <link rel="stylesheet" href="bruch-ux.css?v=bruch-ux-20260803" />
 </head>
 <body>
   <main id="app" class="app-shell"></main>
-
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js';
     import { createUserWithEmailAndPassword, getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js';
     import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js';
-
-    const firebaseConfig = {
-      apiKey: 'AIzaSyC-sG7TSHjT6uCP437sWIMPR4bOCGlAA5w',
-      authDomain: 'trim-attic-422212-p0.firebaseapp.com',
-      projectId: 'trim-attic-422212-p0',
-      storageBucket: 'trim-attic-422212-p0.firebasestorage.app',
-      messagingSenderId: '1070084446234',
-      appId: '1:1070084446234:web:783a501ff2f77b520b19a3',
-    };
-
-    const firebaseApp = initializeApp(firebaseConfig);
-    window.vokabelHeldFirebase = {
-      auth: getAuth(firebaseApp),
-      db: getFirestore(firebaseApp),
-      createUserWithEmailAndPassword,
-      doc,
-      getDoc,
-      onAuthStateChanged,
-      serverTimestamp,
-      setDoc,
-      signInWithEmailAndPassword,
-      signOut,
-    };
+    const firebaseConfig={apiKey:'AIzaSyC-sG7TSHjT6uCP437sWIMPR4bOCGlAA5w',authDomain:'trim-attic-422212-p0.firebaseapp.com',projectId:'trim-attic-422212-p0',storageBucket:'trim-attic-422212-p0.firebasestorage.app',messagingSenderId:'1070084446234',appId:'1:1070084446234:web:783a501ff2f77b520b19a3'};
+    const firebaseApp=initializeApp(firebaseConfig);
+    window.vokabelHeldFirebase={auth:getAuth(firebaseApp),db:getFirestore(firebaseApp),createUserWithEmailAndPassword,doc,getDoc,onAuthStateChanged,serverTimestamp,setDoc,signInWithEmailAndPassword,signOut};
     window.dispatchEvent(new Event('vokabel-held-firebase-ready'));
   </script>
-
-  <script src="app.js?v=cloud-save-20260803"></script>
-  <script src="cloud-save.js?v=cloud-save-20260803"></script>
+  <script src="app.js?v=bruch-ux-20260803"></script>
+  <script src="cloud-save.js?v=bruch-ux-20260803"></script>
+  <script src="bruch-ux.js?v=bruch-ux-20260803"></script>
 </body>
 </html>
