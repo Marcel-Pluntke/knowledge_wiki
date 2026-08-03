@@ -1,0 +1,220 @@
+export type AdventureId = 'vocabulary' | 'decimals' | 'fractions';
+export type ReleaseStatus = 'hidden' | 'beta' | 'released';
+export type InputKind = 'choice' | 'decimal' | 'fraction';
+export type EquipmentSlot = string;
+
+export interface SpriteRef {
+  id: string;
+  src: string;
+  label: string;
+}
+
+export type ItemVisualStyle = 'arcane' | 'knightly' | 'scholarly';
+
+export interface ItemVisualDefinition {
+  id: string;
+  style: ItemVisualStyle;
+  variant: number;
+  primary: string;
+  secondary: string;
+  highlight: string;
+}
+
+export type MerchantPortrait = 'goblin' | 'armorer' | 'scholar';
+export type MerchantBackdrop = 'woodland-shop' | 'forge' | 'library';
+
+export interface MerchantDefinition {
+  id: string;
+  name: string;
+  shopTitle: string;
+  greeting: string;
+  note: string;
+  portrait: MerchantPortrait;
+  backdrop: MerchantBackdrop;
+  shelfNames: string[];
+  colors: {skin: string; outfit: string; accent: string};
+}
+
+export interface ThemeDefinition {
+  primary: string;
+  secondary: string;
+  surface: string;
+  background: string;
+  accent: string;
+}
+
+export interface CurrencyDefinition {
+  id: string;
+  name: string;
+  sprite: SpriteRef;
+}
+
+export interface RankDefinition {
+  id: string;
+  title: string;
+  xp: number;
+}
+
+export interface ItemDefinition {
+  id: string;
+  name: string;
+  slot: EquipmentSlot;
+  tier: number;
+  cost: number;
+  power: number;
+  defense: number;
+  luck: number;
+  visual: ItemVisualDefinition;
+}
+
+export type BossRule = 'normal' | 'heal-on-miss' | 'armor-pierce' | 'charged' | 'golem' | 'shadow' | 'fire';
+
+export interface EnemyDefinition {
+  id: string;
+  name: string;
+  place: string;
+  hp: number;
+  attack: number;
+  reward: number;
+  xp: number;
+  minimumPower?: number;
+  minimumDefense?: number;
+  rule?: BossRule;
+  sprite: SpriteRef;
+}
+
+export interface LearningMode {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface Question {
+  id: string;
+  inputKind: InputKind;
+  prompt: string;
+  choices?: string[];
+  answer: string;
+  numerator?: number;
+  denominator?: number;
+  category?: string;
+  hintSteps: string[];
+}
+
+export interface QuestionContext {
+  modeId: string;
+  sequence: number;
+  random: () => number;
+}
+
+export interface QuestionProvider {
+  next(context: QuestionContext): Question;
+  evaluate(question: Question, answer: string): boolean;
+}
+
+export interface WorldDefinition {
+  id: string;
+  width: number;
+  height: number;
+  start: {x: number; y: number};
+  obstacles: Array<{x: number; y: number; width: number; height: number}>;
+  encounters: Array<{enemyId: string; x: number; y: number}>;
+  merchant: {x: number; y: number};
+  chest: {x: number; y: number};
+}
+
+export interface AchievementDefinition {
+  id: string;
+  title: string;
+  description: string;
+  event: GameEvent['type'];
+  threshold: number;
+  sprite: SpriteRef;
+}
+
+export interface AdventureDefinition {
+  id: AdventureId;
+  title: string;
+  subtitle: string;
+  status: ReleaseStatus;
+  theme: ThemeDefinition;
+  currency: CurrencyDefinition;
+  merchant: MerchantDefinition;
+  ranks: RankDefinition[];
+  slots: Record<EquipmentSlot, string>;
+  items: ItemDefinition[];
+  enemies: EnemyDefinition[];
+  modes: LearningMode[];
+  questionProvider: QuestionProvider;
+  world: WorldDefinition;
+  achievements: AchievementDefinition[];
+}
+
+export interface AdventureSave {
+  schemaVersion: 1;
+  adventureId: AdventureId;
+  revision: number;
+  currency: number;
+  xp: number;
+  completed: number;
+  ownedItemIds: string[];
+  equippedBySlot: Record<EquipmentSlot, string>;
+  clearedEnemyIds: string[];
+  world: {mapId: string; x: number; y: number};
+  stats: {correct: number; wrong: number; bestStreak: number};
+  clientUpdatedAt: number;
+}
+
+export interface PlayerSettings {
+  reducedMotion: boolean;
+  uiScale: 'small' | 'normal' | 'large';
+  fullscreenPreferred: boolean;
+  showControlHints: boolean;
+}
+
+export interface PlayerProfile {
+  schemaVersion: 1;
+  displayName: string;
+  avatarPresetId: string;
+  settings: PlayerSettings;
+  achievements: Record<string, {progress: number; unlockedAt?: number}>;
+  migratedAdventures: AdventureId[];
+  clientUpdatedAt: number;
+}
+
+export interface SaveRepository {
+  loadProfile(): Promise<PlayerProfile | null>;
+  saveProfile(profile: PlayerProfile): Promise<void>;
+  loadAdventure(id: AdventureId): Promise<AdventureSave | null>;
+  saveAdventure(save: AdventureSave): Promise<void>;
+}
+
+export type GameEvent =
+  | {type: 'answer-correct'; adventureId: AdventureId}
+  | {type: 'answer-wrong'; adventureId: AdventureId}
+  | {type: 'item-bought'; adventureId: AdventureId}
+  | {type: 'item-equipped'; adventureId: AdventureId}
+  | {type: 'boss-defeated'; adventureId: AdventureId}
+  | {type: 'area-entered'; adventureId: AdventureId};
+
+export interface BattleAttack {
+  id: 'spark' | 'double' | 'chain' | 'star';
+  name: string;
+  damage: number;
+  cooldown: number;
+  sprite: SpriteRef;
+}
+
+export interface BattleState {
+  enemyId: string;
+  enemyHp: number;
+  enemyMaxHp: number;
+  playerHp: number;
+  playerMaxHp: number;
+  streak: number;
+  phase: 'attack-select' | 'question' | 'resolved' | 'won' | 'lost';
+  selectedAttackId: BattleAttack['id'];
+  cooldowns: Partial<Record<BattleAttack['id'], number>>;
+  counterCount: number;
+  specialTriggered: boolean;
+}

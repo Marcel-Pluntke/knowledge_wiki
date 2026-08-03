@@ -6,6 +6,7 @@ const sidebars: SidebarsConfig = {
     'documentation',
     'automation',
     'test-engineering',
+    'lernhelden-architecture',
     {
       type: 'category',
       label: 'Low Voltage Standards',

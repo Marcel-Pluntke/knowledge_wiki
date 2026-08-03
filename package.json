@@ -2,17 +2,28 @@
   "name": "knowledge-wiki",
   "version": "0.0.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
-    "build": "docusaurus build",
+    "start:game": "npm run dev --workspace @lernhelden/app",
+    "build": "npm run build:game && docusaurus build",
+    "build:game": "npm run build --workspace @lernhelden/app",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
-    "typecheck": "tsc"
+    "typecheck": "tsc && npm run typecheck --workspace @lernhelden/engine && npm run typecheck --workspace @lernhelden/app",
+    "test": "npm run test:legacy-hash && npm run test:assets && npm run test --workspace @lernhelden/engine && npm run test --workspace @lernhelden/app",
+    "test:assets": "node scripts/verify-sprite-assets.mjs",
+    "pretest:e2e": "node scripts/build-e2e.mjs",
+    "test:e2e": "playwright test",
+    "test:legacy-hash": "node scripts/verify-legacy-hash.mjs"
   },
   "dependencies": {
     "@docusaurus/core": "3.9.2",
@@ -27,6 +38,7 @@
     "@docusaurus/module-type-aliases": "3.9.2",
     "@docusaurus/tsconfig": "3.9.2",
     "@docusaurus/types": "3.9.2",
+    "@playwright/test": "^1.54.1",
     "typescript": "~5.6.2"
   },
   "browserslist": {

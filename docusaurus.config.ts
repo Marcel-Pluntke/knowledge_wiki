@@ -8,6 +8,7 @@ const config: Config = {
   title: 'Knowledge Wiki',
   tagline: 'Documentation, Automation, Test Engineering',
   favicon: 'img/icon_green.png',
+  staticDirectories: ['static', 'apps/lernhelden/dist'],
 
   future: {
     v4: true,
@@ -76,8 +77,7 @@ const config: Config = {
           label: 'Topics',
         },
         {to: '/blog', label: 'Blog', position: 'left'},
-        {to: '/mathe-magier', label: 'Mathe Magier', position: 'left'},
-        {to: '/vokabel-held', label: 'Vokabel Held', position: 'left'},
+        {to: '/lernhelden', label: 'Lernhelden', position: 'left'},
         {
           href: 'https://github.com/Marcel-Pluntke/knowledge_wiki',
           label: 'GitHub',

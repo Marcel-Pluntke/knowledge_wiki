@@ -1,8 +1,12 @@
 # Dependencies
-/node_modules
+node_modules/
+**/.vite/
 
 # Production
 /build
+/apps/lernhelden/dist
+/test-results
+/playwright-report
 
 # Generated files
 .docusaurus

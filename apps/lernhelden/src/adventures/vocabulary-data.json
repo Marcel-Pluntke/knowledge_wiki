@@ -1,0 +1,14 @@
+[
+  {"de":"Haus","en":"house","category":"Alltag"},
+  {"de":"Schule","en":"school","category":"Schule"},
+  {"de":"Buch","en":"book","category":"Schule"},
+  {"de":"Stift","en":"pen","category":"Schule"},
+  {"de":"Tisch","en":"table","category":"Alltag"},
+  {"de":"Stuhl","en":"chair","category":"Alltag"},
+  {"de":"Hund","en":"dog","category":"Tiere"},
+  {"de":"Katze","en":"cat","category":"Tiere"},
+  {"de":"Apfel","en":"apple","category":"Essen"},
+  {"de":"Wasser","en":"water","category":"Essen"},
+  {"de":"rot","en":"red","category":"Farben"},
+  {"de":"blau","en":"blue","category":"Farben"}
+]

@@ -1,0 +1,30 @@
+{
+  "name": "@lernhelden/app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --configLoader runner --host 127.0.0.1",
+    "preview": "vite preview --configLoader runner --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build --configLoader runner",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --configLoader runner"
+  },
+  "dependencies": {
+    "@lernhelden/engine": "*",
+    "firebase": "^12.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.5.2",
+    "jsdom": "^26.1.0",
+    "typescript": "~5.6.2",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}
