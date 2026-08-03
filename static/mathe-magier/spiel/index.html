@@ -9,7 +9,7 @@
       const gameAssetBase = window.location.pathname.endsWith('/')
         ? window.location.pathname
         : `${window.location.pathname}/`;
-      document.write(`<link rel="stylesheet" href="${gameAssetBase}style.css?v=touch-inventory-20260802" /><link rel="stylesheet" href="${gameAssetBase}account.css?v=cloud-save-20260802" />`);
+      document.write(`<link rel="stylesheet" href="${gameAssetBase}style.css?v=touch-inventory-20260802" /><link rel="stylesheet" href="${gameAssetBase}account.css?v=cloud-save-20260802" /><link rel="stylesheet" href="${gameAssetBase}chapter-select.css?v=chapter-select-20260803" />`);
     </script>
   </head>
   <body>
@@ -20,8 +20,6 @@
       import { createUserWithEmailAndPassword, getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js';
       import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js';
 
-      // Diese Konfiguration identifiziert nur die öffentliche Web-App. Die
-      // eigentlichen Spielstände werden durch Firebase-Regeln pro Konto geschützt.
       const firebaseConfig = {
         apiKey: 'AIzaSyC-sG7TSHjT6uCP437sWIMPR4bOCGlAA5w',
         authDomain: 'trim-attic-422212-p0.firebaseapp.com',
@@ -41,7 +39,12 @@
     </script>
     <script>
       const gameScript = document.createElement('script');
-      gameScript.src = `${gameAssetBase}app.js?v=touch-inventory-20260802`;
+      gameScript.src = `${gameAssetBase}app.js?v=chapter-select-20260803`;
+      gameScript.onload = () => {
+        const chapterScript = document.createElement('script');
+        chapterScript.src = `${gameAssetBase}chapter-select.js?v=chapter-select-20260803`;
+        document.body.append(chapterScript);
+      };
       document.body.append(gameScript);
     </script>
   </body>
