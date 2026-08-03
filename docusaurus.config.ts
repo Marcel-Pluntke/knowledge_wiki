@@ -77,11 +77,7 @@ const config: Config = {
         },
         {to: '/blog', label: 'Blog', position: 'left'},
         {to: '/mathe-magier', label: 'Mathe Magier', position: 'left'},
-        {
-          href: '/knowledge_wiki/vokabel-held/index.html',
-          label: 'Vokabel Held',
-          position: 'left',
-        },
+        {to: '/vokabel-held', label: 'Vokabel Held', position: 'left'},
         {
           href: 'https://github.com/Marcel-Pluntke/knowledge_wiki',
           label: 'GitHub',
