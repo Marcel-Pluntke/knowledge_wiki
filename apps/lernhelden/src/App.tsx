@@ -114,7 +114,7 @@ function Campaign({adventure,save,onSave}:{adventure:AdventureDefinition;save:Ad
 function Inventory({adventure,save,profile,onSave,onEvent}:{adventure:AdventureDefinition;save:AdventureSave;profile:PlayerProfile;onSave:(save:AdventureSave)=>Promise<void>;onEvent:(type:'item-equipped')=>Promise<void>}){
   const [selected,setSelected]=useState<string|null>(null);const stats=equipmentStats(save,adventure);
   const equip=async(itemId:string,slot:string)=>{const item=adventure.items.find(candidate=>candidate.id===itemId);if(!item||item.slot!==slot)return;await onSave(equipItem(save,adventure,itemId));await onEvent('item-equipped');setSelected(null)};
-  const remove=async(itemId:string)=>{const item=adventure.items.find(candidate=>candidate.id===itemId);if(!item)return;if(Object.values(save.equippedBySlot).includes(itemId)){alert('Lege den Gegenstand zuerst ab.');return}if(confirm(`${item.name} dauerhaft löschen? Du erhältst keine Rückerstattung.`))await onSave(discardItem(save,itemId))};
+  const remove=async(itemId:string)=>{const item=adventure.items.find(candidate=>candidate.id===itemId);if(!item)return;const accepted=window.confirm(`„${item.name}“ wirklich dauerhaft löschen?\n\nDer Gegenstand wird abgelegt, entfernt und es gibt keine Rückerstattung.`);if(accepted)await onSave(discardItem(save,itemId))};
   const equippedIds=new Set(Object.values(save.equippedBySlot));
   const chestItems=save.ownedItemIds.map(itemId=>adventure.items.find(item=>item.id===itemId)).filter(item=>item&&!equippedIds.has(item.id));
   const dropIntoChest=(itemId:string)=>{const item=adventure.items.find(candidate=>candidate.id===itemId);if(item&&save.equippedBySlot[item.slot]===item.id)void onSave(unequipSlot(save,item.slot))};

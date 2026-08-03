@@ -21,8 +21,10 @@ export function unequipSlot(save: AdventureSave, slot: string): AdventureSave {
 }
 
 export function discardItem(save: AdventureSave, itemId: string): AdventureSave {
-  if (!save.ownedItemIds.includes(itemId) || Object.values(save.equippedBySlot).includes(itemId)) return save;
-  return touchSave({...save, ownedItemIds: save.ownedItemIds.filter(id => id !== itemId)});
+  if (!save.ownedItemIds.includes(itemId)) return save;
+  const equippedBySlot = {...save.equippedBySlot};
+  Object.entries(equippedBySlot).forEach(([slot, id]) => { if (id === itemId) delete equippedBySlot[slot]; });
+  return touchSave({...save, ownedItemIds: save.ownedItemIds.filter(id => id !== itemId), equippedBySlot});
 }
 
 export function upgradeCost(itemCost: number, level: number) {
