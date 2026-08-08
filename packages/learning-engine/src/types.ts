@@ -162,6 +162,7 @@ export interface WorldDefinition {
   start: {x: number; y: number};
   obstacles: Array<{x: number; y: number; width: number; height: number}>;
   encounters: Array<{enemyId: string; x: number; y: number}>;
+  campaign?: {elite: {x: number; y: number}; boss: {x: number; y: number}};
   merchant: {x: number; y: number};
   chest: {x: number; y: number};
 }

@@ -8,6 +8,10 @@ export function chapterUnlocked(save: AdventureSave, chapter: CampaignChapter) {
   return chapter.index === 1 || save.campaign.defeatedBossIds.includes(`boss-${save.adventureId}-${chapter.index - 1}`);
 }
 
+export function currentCampaignChapter(save: AdventureSave, definition: AdventureDefinition) {
+  return (definition.campaign ?? []).find(chapter => chapterUnlocked(save, chapter) && !save.campaign.defeatedBossIds.includes(chapter.bossEnemyId)) ?? null;
+}
+
 export function chapterComplete(save: AdventureSave, chapter: CampaignChapter) {
   return chapter.missions.every(mission => save.campaign.completedMissionIds.includes(mission.id));
 }
@@ -24,6 +28,28 @@ export function defeatCampaignEnemy(save: AdventureSave, enemyId: string, boss: 
   return touchSave({...save, campaign: {...save.campaign, [key]: unique(save.campaign[key], enemyId)}});
 }
 
+export type CampaignRun = {missionId?: string; target?: 'elite' | 'boss'};
+
+export function completeCampaignRun(save: AdventureSave, chapter: CampaignChapter, run: CampaignRun) {
+  if (run.missionId) {
+    const mission = chapter.missions.find(candidate => candidate.id === run.missionId);
+    return mission ? completeMission(save, mission.id, mission.reward, mission.xp) : save;
+  }
+  if (run.target === 'elite') return defeatCampaignEnemy(save, chapter.eliteEnemyId, false);
+  if (run.target === 'boss') return defeatCampaignEnemy(save, chapter.bossEnemyId, true);
+  return save;
+}
+
+export function repairCampaignProgress(save: AdventureSave, definition: AdventureDefinition) {
+  const campaign = definition.campaign ?? [];
+  const recoveredElites = campaign.filter(chapter => save.clearedEnemyIds.includes(chapter.eliteEnemyId)).map(chapter => chapter.eliteEnemyId);
+  const recoveredBosses = campaign.filter(chapter => save.clearedEnemyIds.includes(chapter.bossEnemyId)).map(chapter => chapter.bossEnemyId);
+  const defeatedEliteIds = [...new Set([...save.campaign.defeatedEliteIds, ...recoveredElites])];
+  const defeatedBossIds = [...new Set([...save.campaign.defeatedBossIds, ...recoveredBosses])];
+  if (defeatedEliteIds.length === save.campaign.defeatedEliteIds.length && defeatedBossIds.length === save.campaign.defeatedBossIds.length) return save;
+  return touchSave({...save, campaign: {...save.campaign, defeatedEliteIds, defeatedBossIds}});
+}
+
 export function openCampaignChest(save: AdventureSave, chapter: CampaignChapter) {
   if (save.campaign.openedChestIds.includes(chapter.chestId)) return save;
   return touchSave({...save, currency: save.currency + chapter.reward,
@@ -31,7 +57,10 @@ export function openCampaignChest(save: AdventureSave, chapter: CampaignChapter)
 }
 
 export function bossGate(save: AdventureSave, chapter: CampaignChapter, stats: {power: number; defense: number}) {
-  return chapterComplete(save, chapter) && stats.power >= chapter.minimumPower && stats.defense >= chapter.minimumDefense;
+  return chapterComplete(save, chapter)
+    && save.campaign.defeatedEliteIds.includes(chapter.eliteEnemyId)
+    && stats.power >= chapter.minimumPower
+    && stats.defense >= chapter.minimumDefense;
 }
 
 export function recordMastery(save: AdventureSave, question: Question, correct: boolean, now = Date.now()) {

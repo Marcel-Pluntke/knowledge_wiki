@@ -19,7 +19,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import type {AdventureId, AdventureSave, PlayerProfile, SaveRepository} from '@lernhelden/engine';
-import {createAdventureSave, createProfile, normalizeAdventureSave} from '@lernhelden/engine';
+import {createAdventureSave, createProfile, normalizeAdventureSave, repairCampaignProgress} from '@lernhelden/engine';
 import {adventureById, adventures} from '../adventures';
 
 const firebaseConfig = {
@@ -72,7 +72,8 @@ export class FirebaseSaveRepository implements SaveRepository {
   }
 
   async loadAdventure(id: AdventureId): Promise<AdventureSave | null> {
-    const cached = parse<AdventureSave>(localStorage.getItem(adventureCacheKey(id)));
+    const cachedRaw = parse<AdventureSave>(localStorage.getItem(adventureCacheKey(id)));
+    const cached = cachedRaw ? normalizeAdventureSave(cachedRaw, adventureById[id]) : null;
     try {
       const snapshot = await getDoc(doc(db, 'players', this.user.uid, 'adventures', id));
       const remote = snapshot.exists() ? normalizeAdventureSave(snapshot.data(), adventureById[id]) : null;
@@ -96,7 +97,15 @@ export class FirebaseSaveRepository implements SaveRepository {
     const localMath = parse<Record<string, unknown>>(localStorage.getItem('matheMagier'));
     const localVocabulary = parse<Record<string, unknown>>(localStorage.getItem('vokabelHeld'));
     for (const definition of adventures) {
-      if (await this.loadAdventure(definition.id)) continue;
+      const existing = await this.loadAdventure(definition.id);
+      if (existing) {
+        const repaired = repairCampaignProgress(existing, definition);
+        if (repaired !== existing) {
+          try { await this.saveAdventure(repaired); }
+          catch { localStorage.setItem(adventureCacheKey(definition.id), JSON.stringify(repaired)); }
+        }
+        continue;
+      }
       const cloudSource = definition.id === 'vocabulary' ? cloud.vocabulary : definition.id === 'decimals' ? (cloud.game as Record<string, unknown> | undefined)?.decimal : cloud.game;
       const localSource = definition.id === 'vocabulary' ? localVocabulary : definition.id === 'decimals' ? localMath?.decimal : localMath;
       const source = (cloudSource ?? localSource) as Record<string, unknown> | undefined;

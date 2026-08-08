@@ -6,4 +6,15 @@ describe('adventure contract',()=>{
   it('uses isolated sprites and a distinct visual for every item',()=>{for(const adventure of adventures){const refs=[adventure.currency.sprite,...adventure.enemies.map(enemy=>enemy.sprite)];expect(new Set(refs.map(ref=>ref.id)).size).toBe(refs.length);for(const ref of refs)expect(ref.src).toMatch(/^assets\/sprites\/[a-z0-9-]+\.png$/);expect(new Set(adventure.items.map(item=>item.visual.id)).size).toBe(adventure.items.length);expect(adventure.items.every(item=>item.visual.id===item.id)).toBe(true)}});
   it('creates valid questions for every mode',()=>{for(const adventure of adventures)for(const mode of adventure.modes){const question=adventure.questionProvider.next({modeId:mode.id,sequence:1,random:()=>.42});expect(adventure.questionProvider.evaluate(question,question.answer)).toBe(true)}});
   it('provides the full 24-week campaign and ten item tiers',()=>{for(const adventure of adventures){expect(adventure.campaign).toHaveLength(12);expect(new Set(adventure.items.map(item=>item.tier)).size).toBe(10);for(const chapter of adventure.campaign??[]){expect(chapter.missions).toHaveLength(6);expect(chapter.eliteEnemyId).toBeTruthy();expect(chapter.bossEnemyId).toBeTruthy()}}});
+  it('limits decimal practice and its campaign missions to the six approved task types',()=>{
+    const decimals = adventures.find(adventure=>adventure.id==='decimals')!;
+    const allowed = ['add','sub','mul','div','shift','convert'];
+    expect(decimals.modes.map(mode=>mode.id)).toEqual(allowed);
+    expect(decimals.campaign?.flatMap(chapter=>chapter.missions.map(mission=>mission.modeId)).every(mode=>allowed.includes(mode))).toBe(true);
+    for(const modeId of allowed){
+      const question = decimals.questionProvider.next({modeId,sequence:1,random:()=>.42,chapter:1});
+      expect(question.inputKind).toBe('decimal');
+      expect(decimals.questionProvider.evaluate(question,question.answer)).toBe(true);
+    }
+  });
 });
