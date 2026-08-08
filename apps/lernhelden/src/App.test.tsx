@@ -1,9 +1,9 @@
-import {fireEvent,render,screen,within} from '@testing-library/react';
+import {act,fireEvent,render,screen,within} from '@testing-library/react';
 import {describe,expect,it,vi} from 'vitest';
 import {createAdventureSave,createProfile} from '@lernhelden/engine';
 import type {AdventureDefinition} from '@lernhelden/engine';
 import {fractionsAdventure} from './adventures/fractions';
-import {Campaign,World} from './App';
+import {Battle,Campaign,World} from './App';
 
 describe('Campaign',()=>{
   it('shows the boss as ready after an elite victory and unlocks the next chapter after a boss victory',()=>{
@@ -41,5 +41,30 @@ describe('Campaign',()=>{
     rerender(<World adventure={readyAdventure} save={save} profile={createProfile('Testheld')} onSave={vi.fn().mockResolvedValue(undefined)}/>);
     fireEvent.click(screen.getByRole('button',{name:'E'}));
     expect(JSON.parse(sessionStorage.getItem('lernhelden:campaign:fractions')!)).toMatchObject({chapter:1,target:'boss'});
+  });
+
+  it('animates a projectile and both combatants when damage is resolved',async()=>{
+    vi.useFakeTimers();
+    vi.spyOn(Math,'random').mockReturnValue(0);
+    sessionStorage.setItem('lernhelden:mode:fractions','add');
+    sessionStorage.setItem('lernhelden:campaign:fractions',JSON.stringify({chapter:2,missionId:'mission-fractions-2-1'}));
+    const save=createAdventureSave(fractionsAdventure);
+    const {container}=render(<Battle adventure={fractionsAdventure} initialSave={save} profile={createProfile('Testheld')} onSave={vi.fn().mockResolvedValue(undefined)} onProfile={vi.fn().mockResolvedValue(undefined)}/>);
+    const battleView=within(container);
+    fireEvent.click(battleView.getByRole('button',{name:/Funkenangriff/}));
+    expect(container.querySelectorAll('.math-fraction')).toHaveLength(2);
+    fireEvent.change(battleView.getByLabelText('Ganze Zahl'),{target:{value:'1'}});
+    fireEvent.change(battleView.getByLabelText('Zähler'),{target:{value:'1'}});
+    fireEvent.change(battleView.getByLabelText('Nenner'),{target:{value:'1'}});
+    await act(async()=>{fireEvent.click(battleView.getByRole('button',{name:'Antwort prüfen'}));await Promise.resolve();});
+    expect(document.activeElement).toBe(container.querySelector('.battle-stage'));
+    expect(battleView.getByTestId('fighter-player')).toHaveClass('fighter-attacking');
+    expect(battleView.getByTestId('fighter-enemy')).toHaveClass('fighter-hit');
+    expect(battleView.getByTestId('battle-projectile')).toBeVisible();
+    await act(async()=>{vi.advanceTimersByTime(560);});
+    expect(battleView.getByTestId('fighter-enemy')).toHaveClass('fighter-attacking');
+    expect(battleView.getByTestId('fighter-player')).toHaveClass('fighter-hit');
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 });

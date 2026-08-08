@@ -17,4 +17,24 @@ describe('adventure contract',()=>{
       expect(decimals.questionProvider.evaluate(question,question.answer)).toBe(true);
     }
   });
+  it('stages fraction addition and subtraction with mixed numbers from chapter two',()=>{
+    const fractions=adventures.find(adventure=>adventure.id==='fractions')!;
+    const denominators=(prompt:string)=>[...prompt.matchAll(/\d+\/(\d+)/g)].map(match=>match[1]);
+    for(const modeId of ['add','sub']){
+      const chapterOne=fractions.questionProvider.next({modeId,sequence:1,random:()=>0,chapter:1});
+      expect(chapterOne.prompt).not.toMatch(/\d+ \d+\/\d+/);
+      expect(new Set(denominators(chapterOne.prompt)).size).toBe(1);
+
+      const same=fractions.questionProvider.next({modeId,sequence:2,random:()=>0,chapter:2});
+      const different=fractions.questionProvider.next({modeId,sequence:3,random:()=>.9,chapter:2});
+      expect(same.prompt).toMatch(/\d+ \d+\/\d+/);
+      expect(different.prompt).toMatch(/\d+ \d+\/\d+/);
+      expect(new Set(denominators(same.prompt)).size).toBe(1);
+      expect(new Set(denominators(different.prompt)).size).toBe(2);
+      expect(same.numerator).toBeGreaterThanOrEqual(0);
+      expect(different.numerator).toBeGreaterThanOrEqual(0);
+      expect(fractions.questionProvider.evaluate(same,same.answer)).toBe(true);
+      expect(fractions.questionProvider.evaluate(different,different.answer)).toBe(true);
+    }
+  });
 });

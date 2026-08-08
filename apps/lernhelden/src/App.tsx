@@ -123,7 +123,106 @@ function Inventory({adventure,save,profile,onSave,onEvent}:{adventure:AdventureD
 
 function Shop({adventure,save,onSave,onEvent}:{adventure:AdventureDefinition;save:AdventureSave;onSave:(save:AdventureSave)=>Promise<void>;onEvent:(type:'item-bought')=>Promise<void>}){const currentRank=rankFor(adventure,save.xp),tier=adventure.ranks.indexOf(currentRank)+1;const purchase=async(id:string)=>{const next=buyItem(save,adventure,id);if(next===save)return;await onSave(next);await onEvent('item-bought')};const tiers=[...new Set(adventure.items.map(item=>item.tier))];return <div className="page shop-page"><button className="back" onClick={()=>go(`/adventure/${adventure.id}`)}>← Zurück</button><div className="heading-row"><div><p className="eyebrow">Ausrüstung für dein Abenteuer</p><h1>{adventure.merchant.shopTitle}</h1></div><div className="wallet"><Sprite sprite={adventure.currency.sprite} size={44}/><strong>{save.currency}</strong><span>{adventure.currency.name}</span></div></div><section className={`merchant-shop ${adventure.merchant.backdrop}`}><div className="merchant-counter"><MerchantPortrait merchant={adventure.merchant}/><div className="merchant-speech"><strong>{adventure.merchant.name}</strong><p>{adventure.merchant.greeting}</p><small>{currentRank.title} · {save.xp} Rangpunkte</small></div></div><div className="merchant-note">{adventure.merchant.note}</div>{tiers.map(itemTier=><section className={`merchant-shelf ${itemTier>tier?'closed':'open'}`} key={itemTier}><header><div><span>Regal {itemTier}</span><h2>{adventure.merchant.shelfNames[itemTier-1]??`Stufe ${itemTier}`}</h2></div><strong>{itemTier>tier?`Ab Rang ${itemTier}`:'Geöffnet'}</strong></header><div className="shop-grid">{adventure.items.filter(item=>item.tier===itemTier).map(item=>{const owned=save.ownedItemIds.includes(item.id),locked=item.tier>tier;return <article key={item.id} className={locked?'locked':''}><ItemSprite item={item} size={76}/><div><small>Stufe {item.tier}</small><h3>{item.name}</h3><p>Stärke {item.power} · Schutz {item.defense} · Glück {item.luck}</p>{owned?<button disabled>Bereits in der Truhe</button>:locked?<button disabled>Ab Rang {item.tier}</button>:<button onClick={()=>void purchase(item.id)}>{item.cost} {adventure.currency.name}</button>}</div></article>})}</div></section>)}</section></div>}
 
-function Battle({adventure,initialSave,profile,onSave,onProfile}:{adventure:AdventureDefinition;initialSave:AdventureSave;profile:PlayerProfile;onSave:(save:AdventureSave)=>Promise<void>;onProfile:(profile:PlayerProfile)=>Promise<void>}){
+type BattleAnimation = {direction:'player'|'enemy'; attackId:BattleState['selectedAttackId']};
+
+export function Battle({adventure,initialSave,profile,onSave,onProfile}:{adventure:AdventureDefinition;initialSave:AdventureSave;profile:PlayerProfile;onSave:(save:AdventureSave)=>Promise<void>;onProfile:(profile:PlayerProfile)=>Promise<void>}){
+  const modeId=sessionStorage.getItem(`lernhelden:mode:${adventure.id}`)??adventure.modes[0].id;
+  const campaignRun=JSON.parse(sessionStorage.getItem(`lernhelden:campaign:${adventure.id}`)??'null') as {chapter:number;missionId?:string;target?:'elite'|'boss'}|null;
+  const chapter=campaignRun?(adventure.campaign ?? [])[campaignRun.chapter-1]:undefined;
+  const enemy=chapter&&campaignRun?.target?adventure.enemies.find(candidate=>candidate.id===(campaignRun.target==='boss'?chapter.bossEnemyId:chapter.eliteEnemyId))??adventure.enemies[0]:adventure.enemies.find(candidate=>!initialSave.clearedEnemyIds.includes(candidate.id))??adventure.enemies[adventure.enemies.length-1];
+  const stats=equipmentStats(initialSave,adventure);
+  const [battle,setBattle]=useState<BattleState>(()=>createBattle(enemy,stats.defense));
+  const [save,setSave]=useState(initialSave);
+  const [question,setQuestion]=useState<Question|null>(null);
+  const [answer,setAnswer]=useState('');
+  const [feedback,setFeedback]=useState('');
+  const [sequence,setSequence]=useState(0);
+  const [animation,setAnimation]=useState<BattleAnimation|null>(null);
+  const previousBattle=useRef<BattleState|null>(null);
+  const animationTimers=useRef<number[]>([]);
+  const battleStageRef=useRef<HTMLElement>(null);
+
+  const showAnimation=(direction:BattleAnimation['direction'],attackId:BattleAnimation['attackId'],delay=0)=>{
+    const start=()=>{
+      setAnimation({direction,attackId});
+      animationTimers.current.push(window.setTimeout(()=>setAnimation(null),520));
+    };
+    if(delay)animationTimers.current.push(window.setTimeout(start,delay));else start();
+  };
+  useEffect(()=>()=>{animationTimers.current.forEach(timer=>window.clearTimeout(timer));},[]);
+  useEffect(()=>{
+    const previous=previousBattle.current;
+    if(previous){
+      if(battle.enemyHp<previous.enemyHp)showAnimation('player',battle.selectedAttackId);
+      if(battle.playerHp<previous.playerHp)showAnimation('enemy','spark',battle.enemyHp<previous.enemyHp?560:0);
+    }
+    previousBattle.current=battle;
+  },[battle]);
+
+  const newQuestion=()=>{
+    const nextSequence=sequence+1;
+    setSequence(nextSequence);
+    setQuestion(adventure.questionProvider.next({modeId,sequence:nextSequence,random:Math.random,chapter:chapter?.index,mastery:save.masteryByKey}));
+    setAnswer('');
+    setFeedback('');
+  };
+  const choose=(id:BattleState['selectedAttackId'])=>{
+    const selected=selectAttack(battle,id);
+    setBattle(selected);
+    if(selected.phase==='question')newQuestion();
+  };
+  const persistEvent=async(next:AdventureSave,type:'answer-correct'|'answer-wrong'|'boss-defeated')=>{
+    setSave(next);
+    await onSave(next);
+    await onProfile(applyAchievementEvent(profile,adventure,{type,adventureId:adventure.id}));
+  };
+  const focusBattleStage=()=>{
+    const active=document.activeElement;
+    if(active instanceof HTMLElement)active.blur();
+    const stage=battleStageRef.current??document.querySelector<HTMLElement>('.battle-page .battle-stage');
+    if(!stage)return;
+    battleStageRef.current=stage;
+    stage.tabIndex=-1;
+    stage.focus({preventScroll:true});
+    window.setTimeout(()=>stage.scrollIntoView?.({behavior:'smooth',block:'start'}),0);
+  };
+  const submit=async()=>{
+    if(!question)return;
+    focusBattleStage();
+    const correct=adventure.questionProvider.evaluate(question,answer);
+    if(correct){
+      const hit=resolveCorrect(battle,enemy,stats.power);
+      let next=touchSave({...save,currency:save.currency+2+Math.floor(stats.luck/4),xp:save.xp+1,completed:save.completed+1,stats:{...save.stats,correct:save.stats.correct+1,bestStreak:Math.max(save.stats.bestStreak,hit.state.streak)}});
+      setFeedback(`Richtig! ${hit.damage} Schaden.`);
+      if(hit.state.phase==='won'){
+        const first=!next.clearedEnemyIds.includes(enemy.id);
+        next=touchSave({...next,currency:next.currency+(first?enemy.reward:Math.max(5,Math.floor(enemy.reward/8))),xp:next.xp+(first?enemy.xp:0),clearedEnemyIds:first?[...next.clearedEnemyIds,enemy.id]:next.clearedEnemyIds});
+        if(chapter&&campaignRun)next=completeCampaignRun(next,chapter,campaignRun);
+        setBattle(hit.state);
+        await persistEvent(next,'boss-defeated');
+        return;
+      }
+      const counter=resolveCounter(hit.state,enemy,stats.defense,false);
+      setBattle(counter.state);
+      setFeedback(`Richtig! ${hit.damage} Schaden. ${enemy.name} kontert mit ${counter.damage}.`);
+      await persistEvent(next,'answer-correct');
+    }else{
+      const counter=resolveCounter(battle,enemy,stats.defense,true);
+      const next=touchSave({...save,stats:{...save.stats,wrong:save.stats.wrong+1}});
+      setBattle(counter.state);
+      setFeedback(`Noch nicht. Richtig ist ${question.answer}. ${enemy.name} trifft mit ${counter.damage}.`);
+      await persistEvent(next,'answer-wrong');
+    }
+  };
+  const continueBattle=()=>{setBattle(nextTurn(battle));setQuestion(null);setFeedback('')};
+  const projectile=animation&&battleAttacks.find(attack=>attack.id===animation.attackId);
+  const playerClass=`fighter player ${animation?.direction==='player'?'fighter-attacking':animation?.direction==='enemy'?'fighter-hit':''}`;
+  const enemyClass=`fighter enemy ${animation?.direction==='enemy'?'fighter-attacking':animation?.direction==='player'?'fighter-hit':''}`;
+
+  return <div className="page battle-page"><button className="back" onClick={()=>go(`/adventure/${adventure.id}`)}>← Kampf verlassen</button><div className="battle-heading"><div><p className="eyebrow">{adventure.modes.find(mode=>mode.id===modeId)?.title}</p><h1>{enemy.name}</h1></div><span>{enemy.place}</span></div><section className="battle-stage"><div className={playerClass} data-testid="fighter-player"><Avatar profile={profile} size={105}/><strong>{profile.displayName}</strong><Health value={battle.playerHp} max={battle.playerMaxHp}/></div><div className="battle-center">gegen</div><div className={enemyClass} data-testid="fighter-enemy"><Sprite sprite={enemy.sprite} size={118}/><strong>{enemy.name}</strong><Health value={battle.enemyHp} max={battle.enemyMaxHp}/></div>{animation&&projectile&&<span className={`battle-projectile ${animation.direction}`} data-testid="battle-projectile"><Sprite sprite={projectile.sprite} size={52}/></span>}</section>{battle.phase==='attack-select'&&<section><h2>Wähle deinen Angriff</h2><div className="attack-grid">{battleAttacks.map(attack=><button key={attack.id} disabled={(battle.cooldowns[attack.id]??0)>0} onClick={()=>choose(attack.id)}><Sprite sprite={attack.sprite} size={58}/><strong>{attack.name}</strong><small>{attack.id==='chain'?'Stärker mit Serie':`${attack.damage} Kraft · ${attack.cooldown} Abklingzeit`}</small></button>)}</div></section>}{battle.phase==='question'&&question&&<section className="question-card"><span>{question.category}</span><h2>{question.inputKind==='fraction'?<FractionExpression text={question.prompt}/>:question.prompt}</h2>{question.inputKind==='choice'?<div className="choice-grid">{question.choices?.map(choice=><button key={choice} onClick={()=>setAnswer(choice)} className={answer===choice?'selected':''}>{choice}</button>)}</div>:question.inputKind==='fraction'?<FractionInput value={answer} onChange={setAnswer}/>:<input className="answer-input" inputMode="decimal" value={answer} onChange={event=>setAnswer(event.target.value)} onKeyDown={event=>event.key==='Enter'&&void submit()}/>}<button disabled={!answer} onClick={()=>void submit()}>Antwort prüfen</button></section>}{(battle.phase==='resolved'||battle.phase==='won'||battle.phase==='lost')&&<section className={`result ${battle.phase}`}><h2>{battle.phase==='won'?'Sieg!':battle.phase==='lost'?'Dein Held braucht eine Pause':'Nächster Zug'}</h2><p>{feedback}</p>{battle.phase==='resolved'?<button onClick={continueBattle}>Weiterkämpfen</button>:<button onClick={()=>go(`/adventure/${adventure.id}/world`)}>Zur Weltkarte</button>}</section>}</div>;
+}
+
+function LegacyBattle({adventure,initialSave,profile,onSave,onProfile}:{adventure:AdventureDefinition;initialSave:AdventureSave;profile:PlayerProfile;onSave:(save:AdventureSave)=>Promise<void>;onProfile:(profile:PlayerProfile)=>Promise<void>}){
   const modeId=sessionStorage.getItem(`lernhelden:mode:${adventure.id}`)??adventure.modes[0].id;
   const campaignRun=JSON.parse(sessionStorage.getItem(`lernhelden:campaign:${adventure.id}`)??'null') as {chapter:number;missionId?:string;target?:'elite'|'boss'}|null;
   const chapter=campaignRun?(adventure.campaign ?? [])[campaignRun.chapter-1]:undefined;
@@ -144,7 +243,12 @@ function Battle({adventure,initialSave,profile,onSave,onProfile}:{adventure:Adve
 }
 
 function Health({value,max}:{value:number;max:number}){return <div className="health"><i style={{width:`${Math.max(0,100*value/max)}%`}}/><span>{value}/{max}</span></div>}
-function FractionInput({value,onChange}:{value:string;onChange:(value:string)=>void}){const [top,bottom='']=value.split('/');return <div className="fraction-input"><input aria-label="Zähler" inputMode="numeric" value={top} onChange={event=>onChange(`${event.target.value}/${bottom}`)}/><span/><input aria-label="Nenner" inputMode="numeric" value={bottom} onChange={event=>onChange(`${top}/${event.target.value}`)}/></div>}
+function FractionInput({value,onChange}:{value:string;onChange:(value:string)=>void}){
+  const match=value.match(/^(?:(-?\d*)\s+)?(-?\d*)\/(-?\d*)$/);
+  const whole=match?.[1]??'',top=match?.[2]??'',bottom=match?.[3]??'';
+  const update=(nextWhole:string,nextTop:string,nextBottom:string)=>onChange(`${nextWhole.trim()?`${nextWhole.trim()} `:''}${nextTop}/${nextBottom}`);
+  return <div className="fraction-input mixed-fraction-input"><label><small>Ganze Zahl</small><input aria-label="Ganze Zahl" inputMode="numeric" value={whole} onChange={event=>update(event.target.value,top,bottom)}/></label><label><small>Zähler</small><input aria-label="Zähler" inputMode="numeric" value={top} onChange={event=>update(whole,event.target.value,bottom)}/></label><span/><label><small>Nenner</small><input aria-label="Nenner" inputMode="numeric" value={bottom} onChange={event=>update(whole,top,event.target.value)}/></label><p>Optional: Ganze Zahl für gemischte Zahlen, z. B. 1 1/3.</p></div>
+}
 function FractionExpression({text}:{text:string}){return <span className="fraction-expression">{text.split(/(\d+\/\d+)/g).map((part,index)=>{const match=part.match(/^(\d+)\/(\d+)$/);return match?<span className="math-fraction" key={index}><i>{match[1]}</i><b/><i>{match[2]}</i></span>:<span key={index}>{part}</span>})}</span>}
 
 const defaultCampaignPositions={elite:{x:500,y:80},boss:{x:870,y:80}};
