@@ -53,6 +53,8 @@ describe('Campaign',()=>{
     const battleView=within(container);
     fireEvent.click(battleView.getByRole('button',{name:/Funkenangriff/}));
     expect(container.querySelectorAll('.math-fraction')).toHaveLength(2);
+    expect(container.querySelector('.mixed-fraction-input > .whole-number-field')).not.toBeNull();
+    expect(container.querySelector('.mixed-fraction-input > .fraction-fields > span')).not.toBeNull();
     fireEvent.change(battleView.getByLabelText('Ganze Zahl'),{target:{value:'1'}});
     fireEvent.change(battleView.getByLabelText('Zähler'),{target:{value:'1'}});
     fireEvent.change(battleView.getByLabelText('Nenner'),{target:{value:'1'}});
