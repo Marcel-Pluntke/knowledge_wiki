@@ -22,7 +22,7 @@
   left: 50%;
   top: -28rem;
   transform: translateX(-64%);
-  background: radial-gradient(circle, rgba(87, 137, 255, 0.24), transparent 68%);
+  background: radial-gradient(circle, rgba(66, 133, 244, 0.24), transparent 68%);
 }
 
 .heroBanner::after {
@@ -31,7 +31,7 @@
   left: 50%;
   top: -23rem;
   transform: translateX(18%);
-  background: radial-gradient(circle, rgba(163, 102, 246, 0.22), transparent 68%);
+  background: radial-gradient(circle, rgba(52, 168, 83, 0.22), transparent 68%);
 }
 
 .heroBanner :global(.container) {
@@ -47,13 +47,13 @@
   line-height: 0.98;
   letter-spacing: -0.055em;
   color: transparent;
-  background: linear-gradient(110deg, #3f5fdd 5%, #6777ec 38%, #8e6ee8 68%, #b26be6 100%);
+  background: linear-gradient(110deg, #246bfd 5%, #2f86f6 38%, #2ca6c8 68%, #34a853 100%);
   background-clip: text;
   -webkit-background-clip: text;
 }
 
 [data-theme='dark'] .heroBanner :global(.hero__title) {
-  background: linear-gradient(110deg, #a8c7fa 5%, #b4b8ff 40%, #c8a7fa 72%, #e1a8ef 100%);
+  background: linear-gradient(110deg, #8ab4f8 5%, #7cc7e8 40%, #69d3c0 72%, #81c995 100%);
   background-clip: text;
   -webkit-background-clip: text;
 }

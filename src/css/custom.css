@@ -1,12 +1,12 @@
 /* Global Docusaurus theme — Gemini-inspired, without copying product assets. */
 :root {
-  --ifm-color-primary: #5b6ee1;
-  --ifm-color-primary-dark: #4d5fd4;
-  --ifm-color-primary-darker: #4657cc;
-  --ifm-color-primary-darkest: #3847ad;
-  --ifm-color-primary-light: #6f80ea;
-  --ifm-color-primary-lighter: #7d8ced;
-  --ifm-color-primary-lightest: #a5b0f5;
+  --ifm-color-primary: #4285f4;
+  --ifm-color-primary-dark: #3576e8;
+  --ifm-color-primary-darker: #2f6fdf;
+  --ifm-color-primary-darkest: #2459b8;
+  --ifm-color-primary-light: #5a95f5;
+  --ifm-color-primary-lighter: #6ba0f6;
+  --ifm-color-primary-lightest: #9ac0fa;
   --ifm-background-color: #f7f8fc;
   --ifm-background-surface-color: rgba(255, 255, 255, 0.82);
   --ifm-navbar-background-color: rgba(247, 248, 252, 0.78);
@@ -17,25 +17,25 @@
   --ifm-code-font-size: 95%;
   --ifm-global-radius: 14px;
   --ifm-card-border-radius: 20px;
-  --docusaurus-highlighted-code-line-bg: rgba(91, 110, 225, 0.10);
+  --docusaurus-highlighted-code-line-bg: rgba(66, 133, 244, 0.10);
   --wiki-border: rgba(55, 65, 105, 0.12);
   --wiki-surface: rgba(255, 255, 255, 0.78);
   --wiki-surface-strong: rgba(255, 255, 255, 0.94);
   --wiki-muted-surface: rgba(238, 241, 248, 0.78);
   --wiki-shadow: 0 12px 40px rgba(49, 57, 91, 0.08);
-  --wiki-glow-blue: rgba(96, 143, 255, 0.16);
-  --wiki-glow-purple: rgba(143, 92, 246, 0.13);
-  --wiki-gradient: linear-gradient(135deg, #5b7cfa 0%, #7b6ff0 48%, #9b72e8 100%);
+  --wiki-glow-blue: rgba(66, 133, 244, 0.17);
+  --wiki-glow-green: rgba(52, 168, 83, 0.14);
+  --wiki-gradient: linear-gradient(135deg, #4285f4 0%, #2f9fe5 48%, #34a853 100%);
 }
 
 [data-theme='dark'] {
-  --ifm-color-primary: #a8c7fa;
-  --ifm-color-primary-dark: #8db4f3;
-  --ifm-color-primary-darker: #7daaf0;
-  --ifm-color-primary-darkest: #4f86df;
-  --ifm-color-primary-light: #c0d6fb;
-  --ifm-color-primary-lighter: #cce0fc;
-  --ifm-color-primary-lightest: #e8f0fe;
+  --ifm-color-primary: #8ab4f8;
+  --ifm-color-primary-dark: #73a3f3;
+  --ifm-color-primary-darker: #669af0;
+  --ifm-color-primary-darkest: #3f7ddd;
+  --ifm-color-primary-light: #a1c4fa;
+  --ifm-color-primary-lighter: #b0cdfb;
+  --ifm-color-primary-lightest: #d9e7fd;
   --ifm-background-color: #131314;
   --ifm-background-surface-color: rgba(30, 31, 32, 0.86);
   --ifm-navbar-background-color: rgba(19, 19, 20, 0.80);
@@ -43,15 +43,15 @@
   --ifm-font-color-base: #e3e3e3;
   --ifm-heading-color: #f1f3f4;
   --ifm-color-content-secondary: #a9abb3;
-  --docusaurus-highlighted-code-line-bg: rgba(168, 199, 250, 0.12);
+  --docusaurus-highlighted-code-line-bg: rgba(138, 180, 248, 0.12);
   --wiki-border: rgba(255, 255, 255, 0.10);
   --wiki-surface: rgba(30, 31, 32, 0.78);
   --wiki-surface-strong: rgba(35, 36, 38, 0.96);
   --wiki-muted-surface: rgba(255, 255, 255, 0.055);
   --wiki-shadow: 0 16px 45px rgba(0, 0, 0, 0.22);
-  --wiki-glow-blue: rgba(76, 133, 255, 0.17);
-  --wiki-glow-purple: rgba(152, 100, 255, 0.15);
-  --wiki-gradient: linear-gradient(135deg, #8ab4f8 0%, #a78bfa 48%, #c58af9 100%);
+  --wiki-glow-blue: rgba(76, 133, 255, 0.18);
+  --wiki-glow-green: rgba(69, 196, 122, 0.15);
+  --wiki-gradient: linear-gradient(135deg, #8ab4f8 0%, #65c6b4 48%, #81c995 100%);
 }
 
 html {
@@ -61,7 +61,7 @@ html {
 body {
   background:
     radial-gradient(circle at 8% -10%, var(--wiki-glow-blue), transparent 32rem),
-    radial-gradient(circle at 94% 8%, var(--wiki-glow-purple), transparent 28rem),
+    radial-gradient(circle at 94% 8%, var(--wiki-glow-green), transparent 28rem),
     var(--ifm-background-color);
   font-feature-settings: 'kern';
 }
@@ -250,21 +250,49 @@ table td {
   filter: brightness(1.05);
 }
 
-/* Dropdowns and mobile navigation */
-.dropdown__menu,
-.navbar-sidebar {
+/* Dropdowns */
+.dropdown__menu {
   border: 1px solid var(--wiki-border);
+  border-radius: 16px;
   background: var(--wiki-surface-strong);
   box-shadow: var(--wiki-shadow);
   backdrop-filter: blur(18px);
-}
-
-.dropdown__menu {
-  border-radius: 16px;
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .dropdown__link {
   border-radius: 10px;
+}
+
+/* Mobile navigation: keep Docusaurus' panel transforms intact and avoid
+   backdrop-filter compositing issues on iOS/Safari. */
+.navbar-sidebar {
+  border: 0;
+  border-right: 1px solid var(--wiki-border);
+  background: var(--ifm-background-color);
+  box-shadow: var(--wiki-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.navbar-sidebar__brand {
+  border-bottom: 1px solid var(--wiki-border);
+  background: var(--wiki-surface-strong);
+  box-shadow: none;
+}
+
+.navbar-sidebar__items {
+  background: var(--ifm-background-color);
+}
+
+.navbar-sidebar .menu__link {
+  color: var(--ifm-font-color-base);
+}
+
+.navbar-sidebar .menu__link:hover,
+.navbar-sidebar .menu__link--active {
+  background: var(--wiki-muted-surface);
+  color: var(--ifm-color-primary);
 }
 
 /* Footer */
