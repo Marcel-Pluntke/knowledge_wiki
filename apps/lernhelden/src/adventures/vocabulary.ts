@@ -50,11 +50,11 @@ export const vocabularyAdventure: AdventureDefinition = {
   ].map(([id,name,place,hp,attack,reward,xp], index) => ({id:String(id),name:String(name),place:String(place),hp:Number(hp),attack:Number(attack),reward:Number(reward),xp:Number(xp),rule:index===1?'heal-on-miss':index===3?'armor-pierce':index===5?'fire':'normal',sprite:sprite(String(id),String(name))})).concat(campaignContent.enemies) as AdventureDefinition['enemies'],
   campaign:campaignContent.campaign,
   modes:[
-    {id:'de-en',title:'Deutsch → Englisch',description:'Finde die englische Übersetzung.'},
-    {id:'en-de',title:'Englisch → Deutsch',description:'Finde die deutsche Übersetzung.'},
+    {id:'de-en',title:'Deutsch zu Englisch',description:'Finde die englische Übersetzung.'},
+    {id:'en-de',title:'Englisch zu Deutsch',description:'Finde die deutsche Übersetzung.'},
     {id:'spell',title:'Schreibwerkstatt',description:'Schreibe die Übersetzung selbst.'},
   ],
   questionProvider:provider,
-  world:{id:'wordlands',width:960,height:540,start:{x:90,y:420},obstacles:[{x:270,y:120,width:130,height:75},{x:490,y:310,width:120,height:80},{x:690,y:120,width:120,height:70}],encounters:[{enemyId:'word-slime',x:230,y:390},{enemyId:'translation-goblin',x:430,y:210},{enemyId:'book-skeleton',x:650,y:390},{enemyId:'language-troll',x:820,y:190}],merchant:{x:120,y:120},chest:{x:820,y:420}},
+  world:{id:'wordlands',width:960,height:540,start:{x:90,y:420},obstacles:[{x:270,y:235,width:108,height:58},{x:468,y:270,width:98,height:60},{x:520,y:62,width:92,height:52}],encounters:[{enemyId:'word-slime',x:295,y:335},{enemyId:'translation-goblin',x:470,y:145},{enemyId:'book-skeleton',x:520,y:475},{enemyId:'language-troll',x:650,y:270}],merchant:{x:90,y:110},chest:{x:385,y:500}},
   achievements:commonAchievements,
 };

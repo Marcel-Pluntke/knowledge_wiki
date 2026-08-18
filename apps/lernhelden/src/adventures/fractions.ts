@@ -8,27 +8,38 @@ const fractionText=(numerator:number,denominator:number)=>{
   return whole>0&&remainder>0?`${whole} ${remainder}/${denominator}`:`${numerator}/${denominator}`;
 };
 
+export type FractionPracticeVariant='proper'|'mixed';
+export const fractionMixedRate=(chapter:number)=>{
+  if(chapter<4)return 0;
+  if(chapter===4)return .2;
+  if(chapter===5)return .35;
+  if(chapter===6)return .5;
+  return .65;
+};
+
 const provider: QuestionProvider={
   next({modeId,sequence,random,chapter = 1}){
     const rand=(min:number,max:number)=>Math.floor(random()*(max-min+1))+min;
-    const chosen=modeId==='test'?['add','sub','mul','div','reduce'][rand(0,4)]:modeId;
+    const [requestedMode,practiceVariant]=modeId.split(':') as [string,FractionPracticeVariant?];
+    const chosen=requestedMode==='test'?['add','sub','mul','div','reduce'][rand(0,4)]:requestedMode;
     const max=Math.min(14,5+chapter);
     let an=rand(1,max),ad=rand(2,Math.min(18,8+chapter)),bn=rand(1,max),bd=rand(2,Math.min(18,8+chapter)),rn=0,rd=1,prompt='',category='';
 
     if(chosen==='add'||chosen==='sub'){
-      if(chapter===1){
-        ad=rand(2,8);bd=ad;an=rand(1,ad-1);bn=rand(1,bd-1);
-        category='Gleichnamige Brüche';
-      }else{
-        const sameDenominator=rand(0,1)===0;
-        ad=rand(2,Math.min(12,6+chapter));
-        bd=sameDenominator?ad:rand(2,Math.min(12,6+chapter));
-        if(!sameDenominator&&bd===ad)bd=bd===Math.min(12,6+chapter)?2:bd+1;
-        an=rand(1,3)*ad+rand(1,ad-1);
-        const otherWhole=rand(0,2);
-        bn=otherWhole*bd+rand(1,bd-1);
-        category=sameDenominator?'Gleichnamige Brüche mit gemischten Zahlen':'Ungleichnamige Brüche mit gemischten Zahlen';
+      const sameDenominator=chapter===1||practiceVariant==='mixed'||rand(0,1)===0;
+      ad=rand(2,chapter===1?8:Math.min(12,6+chapter));
+      bd=sameDenominator?ad:rand(2,Math.min(12,6+chapter));
+      if(!sameDenominator&&bd===ad)bd=bd===Math.min(12,6+chapter)?2:bd+1;
+      const mixedRate=practiceVariant==='mixed'?1:practiceVariant==='proper'?0:fractionMixedRate(chapter);
+      const useMixed=mixedRate>0&&random()<mixedRate;
+      let firstWhole=0,secondWhole=0;
+      if(useMixed){
+        firstWhole=practiceVariant==='mixed'||chapter<=5?1:chapter===6?rand(1,2):rand(1,3);
+        if(!practiceVariant&&chapter>=7&&random()<.35)secondWhole=rand(1,3);
       }
+      an=firstWhole*ad+rand(1,ad-1);
+      bn=secondWhole*bd+rand(1,bd-1);
+      category=`${sameDenominator?'Gleichnamige':'Ungleichnamige'} Brüche${useMixed?' mit gemischten Zahlen':''}`;
       if(chosen==='sub'&&an/ad<bn/bd){[an,bn]=[bn,an];[ad,bd]=[bd,ad];}
       rn=chosen==='add'?an*bd+bn*ad:an*bd-bn*ad;
       rd=ad*bd;
@@ -70,6 +81,6 @@ export const fractionsAdventure: AdventureDefinition={
   campaign:campaignContent.campaign,
   modes:[{id:'add',title:'Zauber-Mischung',description:'Addiere zwei Brüche.'},{id:'sub',title:'Drachenbiss',description:'Subtrahiere zwei Brüche.'},{id:'mul',title:'Kristall-Kopie',description:'Multipliziere Brüche.'},{id:'div',title:'Portal-Teiler',description:'Dividiere Brüche.'},{id:'reduce',title:'Kürzungs-Kobold',description:'Kürze vollständig.'},{id:'test',title:'Meisterprüfung',description:'Alle Rechenarten gemischt.'}],
   questionProvider:provider,
-  world:{id:'fraction-realms',width:960,height:540,start:{x:90,y:420},obstacles:[{x:245,y:145,width:125,height:72},{x:440,y:254,width:100,height:74},{x:625,y:88,width:126,height:60}],encounters:[{enemyId:'fraction-goblin',x:250,y:390},{enemyId:'arithmetic-slime',x:430,y:190},{enemyId:'denominator-troll',x:650,y:390},{enemyId:'fraction-basilisk',x:810,y:180}],merchant:{x:100,y:110},chest:{x:830,y:430}},
+  world:{id:'fraction-realms',width:960,height:540,start:{x:90,y:420},obstacles:[{x:275,y:235,width:105,height:55},{x:470,y:270,width:90,height:55},{x:525,y:60,width:85,height:48}],encounters:[{enemyId:'fraction-goblin',x:300,y:330},{enemyId:'arithmetic-slime',x:475,y:150},{enemyId:'denominator-troll',x:520,y:475},{enemyId:'fraction-basilisk',x:650,y:270}],merchant:{x:90,y:110},chest:{x:390,y:500}},
   achievements:commonAchievements,
 };

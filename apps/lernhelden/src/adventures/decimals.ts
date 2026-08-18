@@ -86,5 +86,5 @@ export const decimalsAdventure: AdventureDefinition = {
     {id:'convert',title:'Maß- und Geldmarkt',description:'Rechne Größen und Geld um.'},
   ],
   questionProvider:provider,
-  world:{id:'decimal-fortress',width:960,height:540,start:{x:80,y:420},obstacles:[{x:220,y:90,width:150,height:90},{x:430,y:280,width:140,height:80},{x:680,y:80,width:130,height:100}],encounters:[{enemyId:'comma-goblin',x:220,y:400},{enemyId:'decimal-slime',x:420,y:200},{enemyId:'hundredths-hydra',x:640,y:390},{enemyId:'rounding-giant',x:820,y:190}],merchant:{x:100,y:120},chest:{x:820,y:430}},achievements:commonAchievements,
+  world:{id:'decimal-fortress',width:960,height:540,start:{x:80,y:420},obstacles:[{x:265,y:235,width:110,height:58},{x:470,y:272,width:95,height:58},{x:520,y:62,width:95,height:50}],encounters:[{enemyId:'comma-goblin',x:295,y:335},{enemyId:'decimal-slime',x:470,y:145},{enemyId:'hundredths-hydra',x:520,y:475},{enemyId:'rounding-giant',x:650,y:270}],merchant:{x:90,y:110},chest:{x:385,y:500}},achievements:commonAchievements,
 };
