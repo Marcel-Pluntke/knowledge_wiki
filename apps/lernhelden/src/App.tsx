@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import type {AdventureDefinition, AdventureId, AdventureSave, BattleState, PlayerProfile, Question} from '@lernhelden/engine';
 import {applyAchievementEvent, battleAttacks, bossGate, buyItem, chapterComplete, chapterUnlocked, completeCampaignRun, createAdventureSave, createBattle, createProfile, currentCampaignChapter, discardItem, equipItem, equipmentStats, nextTurn, normalizeAdventureSave, openCampaignChest, rankFor, recordMastery, resolveCorrect, resolveCounter, selectAttack, touchSave, unequipSlot, upgradeCost, upgradeItem} from '@lernhelden/engine';
 import {adventureById, adventures} from './adventures';
@@ -84,7 +84,7 @@ export function App(){
   if(!profile.displayName)return <ProfileEditor profile={profile} onSave={saveProfile} firstRun/>;
   const adventure=route.adventureId?adventureById[route.adventureId]:undefined;
   const save=adventure?saves[adventure.id]??createAdventureSave(adventure):undefined;
-  return <div className="app" style={adventure?arcaneThemes[adventure.id] as React.CSSProperties:undefined}>
+  return <div className={`app${route.screen==='world'?' world-active':''}`} style={adventure?arcaneThemes[adventure.id] as React.CSSProperties:undefined}>
     <Header profile={profile} adventure={adventure} save={save} onLogout={()=>void logout()}/>
     {message&&<button className="notice" onClick={()=>setMessage('')}>{message}</button>}
     <main>
@@ -99,7 +99,7 @@ export function App(){
       {adventure&&save&&route.screen==='world'&&<World adventure={adventure} save={save} profile={profile} onSave={saveAdventure}/>}
       {adventure&&save&&route.screen==='battle'&&<Battle adventure={adventure} initialSave={save} profile={profile} onSave={saveAdventure} onProfile={saveProfile}/>}
     </main>
-    {route.screen!=='battle'&&<MobileNavigation route={route} adventure={adventure} onLogout={()=>void logout()}/>}
+    {route.screen!=='battle'&&route.screen!=='world'&&<MobileNavigation route={route} adventure={adventure} onLogout={()=>void logout()}/>}
   </div>;
 }
 
@@ -360,6 +360,48 @@ function FractionInput({value,onChange}:{value:string;onChange:(value:string)=>v
 }
 function FractionExpression({text}:{text:string}){return <span className="fraction-expression">{text.split(/(\d+\/\d+)/g).map((part,index)=>{const match=part.match(/^(\d+)\/(\d+)$/);return match?<span className="math-fraction" key={index}><i>{match[1]}</i><b/><i>{match[2]}</i></span>:<span key={index}>{part}</span>})}</span>}
 
+type MoveDirection=[number,number];
+
+function TouchJoystick({onMove,onStop}:{onMove:(dx:number,dy:number)=>void;onStop:()=>void}){
+  const pointerRef=useRef<number|null>(null);
+  const directionRef=useRef<MoveDirection|null>(null);
+  const repeatRef=useRef<number|undefined>(undefined);
+  const moveRef=useRef(onMove);
+  const stopRef=useRef(onStop);
+  const [knob,setKnob]=useState({x:0,y:0});
+  const [active,setActive]=useState(false);
+  useEffect(()=>{moveRef.current=onMove;stopRef.current=onStop},[onMove,onStop]);
+  const stopRepeat=()=>{if(repeatRef.current!==undefined){window.clearInterval(repeatRef.current);repeatRef.current=undefined}directionRef.current=null};
+  const startDirection=(direction:MoveDirection|null)=>{
+    if(!direction){stopRepeat();return}
+    if(directionRef.current?.[0]===direction[0]&&directionRef.current?.[1]===direction[1])return;
+    stopRepeat();directionRef.current=direction;moveRef.current(...direction);
+    repeatRef.current=window.setInterval(()=>{const current=directionRef.current;if(current)moveRef.current(...current)},120);
+  };
+  const update=(event:React.PointerEvent<HTMLDivElement>)=>{
+    const rect=event.currentTarget.getBoundingClientRect();
+    const dx=event.clientX-(rect.left+rect.width/2),dy=event.clientY-(rect.top+rect.height/2);
+    const distance=Math.hypot(dx,dy),limit=Math.min(22,Math.max(14,Math.min(rect.width,rect.height)*.22));
+    const scale=distance>limit?limit/distance:1;
+    setKnob({x:dx*scale,y:dy*scale});
+    if(distance<6){startDirection(null);return}
+    startDirection(Math.abs(dx)>=Math.abs(dy)?[dx<0?-1:1,0]:[0,dy<0?-1:1]);
+  };
+  const finish=(event?:React.PointerEvent<HTMLDivElement>)=>{
+    if(event&&pointerRef.current!==event.pointerId)return;
+    pointerRef.current=null;stopRepeat();setKnob({x:0,y:0});setActive(false);stopRef.current();
+  };
+  useEffect(()=>{const cancel=()=>{if(pointerRef.current===null)return;pointerRef.current=null;if(repeatRef.current!==undefined)window.clearInterval(repeatRef.current);repeatRef.current=undefined;directionRef.current=null;setKnob({x:0,y:0});setActive(false);stopRef.current()};window.addEventListener('blur',cancel);return()=>{window.removeEventListener('blur',cancel);if(repeatRef.current!==undefined)window.clearInterval(repeatRef.current)}},[]);
+  const fallback=(label:string,direction:MoveDirection)=><button aria-label={label} onClick={()=>{moveRef.current(...direction);stopRef.current()}}/>;
+  return <div className={`touch-joystick${active?' active':''}`} role="group" aria-label="Bewegungssteuerung"
+    onPointerDown={event=>{if(pointerRef.current!==null)return;pointerRef.current=event.pointerId;event.currentTarget.setPointerCapture?.(event.pointerId);setActive(true);update(event)}}
+    onPointerMove={event=>{if(pointerRef.current===event.pointerId)update(event)}}
+    onPointerUp={finish} onPointerCancel={finish} onLostPointerCapture={finish}>
+    <span className="joystick-knob" style={{transform:`translate3d(${knob.x}px,${knob.y}px,0)`}}/>
+    <span className="joystick-fallback">{fallback('Nach oben',[0,-1])}{fallback('Nach links',[-1,0])}{fallback('Nach rechts',[1,0])}{fallback('Nach unten',[0,1])}</span>
+  </div>;
+}
+
 export function World({adventure,save,profile,onSave}:{adventure:AdventureDefinition;save:AdventureSave;profile:PlayerProfile;onSave:(save:AdventureSave)=>Promise<void>}){
   const canvasRef=useRef<HTMLCanvasElement>(null);
   const cameraRef=useRef<HTMLDivElement>(null);
@@ -377,7 +419,25 @@ export function World({adventure,save,profile,onSave}:{adventure:AdventureDefini
   const missionGateOpen=!chapter||missionsDone;
   const bossGateOpen=!chapter||bossReady;
   const [position,setPosition]=useState(()=>securePosition(save.world,adventure.world.start,scene,missionsDone,bossGateOpen,Boolean(chapter)));
-  const [hint,setHint]=useState('Wähle einen Weg und finde die sechs Missionsorte.');
+  const initialHint='Wähle einen Weg und finde die sechs Missionsorte.';
+  const [hint,setHint]=useState(initialHint);
+  const [touchMap,setTouchMap]=useState(()=>typeof window.matchMedia==='function'&&window.matchMedia('(hover: none) and (pointer: coarse) and (max-width: 950px)').matches);
+  const [goalOpen,setGoalOpen]=useState(()=>!touchMap);
+  const positionRef=useRef(position);
+  const saveRef=useRef(save);
+  const onSaveRef=useRef(onSave);
+  const persistTimerRef=useRef<number|undefined>(undefined);
+  const hintTimerRef=useRef<number|undefined>(undefined);
+  useEffect(()=>{saveRef.current=save;onSaveRef.current=onSave},[save,onSave]);
+  useEffect(()=>{if(typeof window.matchMedia!=='function')return;const media=window.matchMedia('(hover: none) and (pointer: coarse) and (max-width: 950px)');const update=()=>{setTouchMap(media.matches);setGoalOpen(!media.matches)};update();media.addEventListener?.('change',update);return()=>media.removeEventListener?.('change',update)},[]);
+  const flushPosition=useCallback(()=>{
+    if(persistTimerRef.current!==undefined){window.clearTimeout(persistTimerRef.current);persistTimerRef.current=undefined}
+    const current=positionRef.current,stored=saveRef.current.world;
+    if(current.x===stored.x&&current.y===stored.y)return;
+    const next=touchSave({...saveRef.current,world:current});saveRef.current=next;void onSaveRef.current(next);
+  },[]);
+  const schedulePositionSave=useCallback(()=>{if(persistTimerRef.current!==undefined)window.clearTimeout(persistTimerRef.current);persistTimerRef.current=window.setTimeout(flushPosition,350)},[flushPosition]);
+  const showHint=useCallback((message:string)=>{setHint(message);if(hintTimerRef.current!==undefined)window.clearTimeout(hintTimerRef.current);hintTimerRef.current=window.setTimeout(()=>setHint(initialHint),2800)},[]);
   const missingPower=chapter?Math.max(0,chapter.minimumPower-stats.power):0;
   const missingDefense=chapter?Math.max(0,chapter.minimumDefense-stats.defense):0;
   const elite=chapter?adventure.enemies.find(enemy=>enemy.id===chapter.eliteEnemyId):undefined;
@@ -385,18 +445,20 @@ export function World({adventure,save,profile,onSave}:{adventure:AdventureDefini
   const bossRequirement=missingPower||missingDefense?`Stärke ${stats.power}/${chapter!.minimumPower}${missingPower?` – noch ${missingPower}`:''} · Schutz ${stats.defense}/${chapter!.minimumDefense}${missingDefense?` – noch ${missingDefense}`:''}`:'Stärke und Schutz reichen aus.';
   const eliteMessage=!chapter?'Alle Kampagnenkapitel sind geschafft.':eliteDone?'Elite besiegt.':missionsDone?'Elite ist spielbar.':`Elite gesperrt: Missionen ${completedMissions}/${chapter.missions.length}.`;
   const bossMessage=!chapter?'Alle Kampagnenkapitel sind geschafft.':bossDone?'Kapitelboss besiegt.':!missionsDone?'Boss gesperrt: erst alle Missionen abschließen.':!eliteDone?'Boss gesperrt: erst die Elite besiegen.':bossReady?'Kapitelboss ist spielbar.':`Boss gesperrt: ${bossRequirement}`;
-  const startCampaignBattle=(target:'elite'|'boss')=>{if(!chapter)return;sessionStorage.setItem(`lernhelden:mode:${adventure.id}`,chapter.missions[0]?.modeId??adventure.modes[0].id);sessionStorage.setItem(`lernhelden:campaign:${adventure.id}`,JSON.stringify({chapter:chapter.index,target}));go(`/adventure/${adventure.id}/battle`)};
-  const startMission=(index:number)=>{const mission=chapter?.missions[index];if(!chapter||!mission)return;sessionStorage.setItem(`lernhelden:mode:${adventure.id}`,mission.modeId);sessionStorage.setItem(`lernhelden:campaign:${adventure.id}`,JSON.stringify({chapter:chapter.index,missionId:mission.id}));go(`/adventure/${adventure.id}/battle`)};
-  const move=(dx:number,dy:number)=>{const step=24,nx=Math.max(24,Math.min(adventure.world.width-24,position.x+dx*step)),ny=Math.max(64,Math.min(adventure.world.height-24,position.y+dy*step));const blocked=collides({x:nx,y:ny},collisionRects(scene,adventure.world.obstacles,missionGateOpen,bossGateOpen));if(!blocked){const next={...position,x:nx,y:ny};setPosition(next);void onSave(touchSave({...save,world:next}))}};
+  const startCampaignBattle=(target:'elite'|'boss')=>{if(!chapter)return;flushPosition();sessionStorage.setItem(`lernhelden:mode:${adventure.id}`,chapter.missions[0]?.modeId??adventure.modes[0].id);sessionStorage.setItem(`lernhelden:campaign:${adventure.id}`,JSON.stringify({chapter:chapter.index,target}));go(`/adventure/${adventure.id}/battle`)};
+  const startMission=(index:number)=>{const mission=chapter?.missions[index];if(!chapter||!mission)return;flushPosition();sessionStorage.setItem(`lernhelden:mode:${adventure.id}`,mission.modeId);sessionStorage.setItem(`lernhelden:campaign:${adventure.id}`,JSON.stringify({chapter:chapter.index,missionId:mission.id}));go(`/adventure/${adventure.id}/battle`)};
+  const move=useCallback((dx:number,dy:number)=>{const current=positionRef.current,step=24,nx=Math.max(24,Math.min(adventure.world.width-24,current.x+dx*step)),ny=Math.max(64,Math.min(adventure.world.height-24,current.y+dy*step));const blocked=collides({x:nx,y:ny},collisionRects(scene,adventure.world.obstacles,missionGateOpen,bossGateOpen));if(!blocked){const next={...current,x:nx,y:ny};positionRef.current=next;setPosition(next);schedulePositionSave()}},[adventure.world.height,adventure.world.obstacles,adventure.world.width,bossGateOpen,missionGateOpen,scene,schedulePositionSave]);
   const near=(point:{x:number;y:number},distance=72)=>Math.hypot(point.x-position.x,point.y-position.y)<distance;
   const nearbyMission=chapter?scene.missionSites.findIndex(site=>near(site,66)):-1;
   const nearMissionGate=near({x:scene.missionGate.x+scene.missionGate.width/2,y:scene.missionGate.y+scene.missionGate.height/2},70);
   const nearBossGate=near({x:scene.bossGate.x+scene.bossGate.width/2,y:scene.bossGate.y+scene.bossGate.height/2},70);
   const interactionLabel=nearbyMission>=0?completedMissionStates[nearbyMission]?`Mission ${nearbyMission+1} geschafft`:`E · Mission ${nearbyMission+1} starten`:!missionGateOpen&&nearMissionGate?'E · Missionstor prüfen':!bossGateOpen&&nearBossGate?'E · Bosstor prüfen':elite&&near(scene.campaign.elite)?`E · ${eliteReady?'Elite herausfordern':'Elite prüfen'}`:boss&&near(scene.campaign.boss)?`E · ${bossReady?'Boss herausfordern':'Boss prüfen'}`:near(adventure.world.merchant)?'E · Händler':near(adventure.world.chest)?'E · Truhe':'WASD / Pfeile · E zum Interagieren';
   const actionLabel=nearbyMission>=0?(completedMissionStates[nearbyMission]?'Erledigt':'Mission'):nearMissionGate||nearBossGate?'Tor':elite&&near(scene.campaign.elite)?'Elite':boss&&near(scene.campaign.boss)?'Boss':near(adventure.world.merchant)?'Händler':near(adventure.world.chest)?'Truhe':'Aktion';
-  const interact=()=>{if(chapter&&nearbyMission>=0){const mission=chapter.missions[nearbyMission];if(!mission)return;if(save.campaign.completedMissionIds.includes(mission.id))setHint(`${mission.title} ist bereits geschafft.`);else startMission(nearbyMission);return}if(!missionGateOpen&&nearMissionGate){setHint(`Das Missionstor ist versiegelt: ${completedMissions}/${chapter?.missions.length??6} Missionen geschafft.`);return}if(!bossGateOpen&&nearBossGate){setHint(bossMessage);return}if(chapter&&elite&&near(scene.campaign.elite)){if(eliteReady)startCampaignBattle('elite');else setHint(eliteMessage);return}if(chapter&&boss&&near(scene.campaign.boss)){if(bossReady)startCampaignBattle('boss');else setHint(bossMessage);return}const encounter=adventure.world.encounters.find(item=>near(item));if(encounter){startTraining(adventure,adventure.modes[0].id);return}if(near(adventure.world.merchant)){go(`/adventure/${adventure.id}/shop`);return}if(near(adventure.world.chest)){go(`/adventure/${adventure.id}/inventory`);return}setHint('Gehe näher an eine Mission, einen Gegner, Händler oder die Truhe.')};
-  useEffect(()=>{const secured=securePosition(position,adventure.world.start,scene,missionsDone,bossGateOpen,Boolean(chapter));if(secured.x!==position.x||secured.y!==position.y){setPosition(secured);void onSave(touchSave({...save,world:secured}))}},[chapter?.index,missionsDone,bossGateOpen]);
-  useEffect(()=>{const element=cameraRef.current;if(!element)return;const update=()=>{const width=element.clientWidth,height=element.clientHeight;if(width&&height)setCameraSize({width,height})};update();if(typeof ResizeObserver==='undefined'){window.addEventListener('resize',update);return()=>window.removeEventListener('resize',update)}const observer=new ResizeObserver(update);observer.observe(element);return()=>observer.disconnect()},[]);
+  const hasInteraction=actionLabel!=='Aktion';
+  const interact=()=>{flushPosition();if(chapter&&nearbyMission>=0){const mission=chapter.missions[nearbyMission];if(!mission)return;if(save.campaign.completedMissionIds.includes(mission.id))showHint(`${mission.title} ist bereits geschafft.`);else startMission(nearbyMission);return}if(!missionGateOpen&&nearMissionGate){showHint(`Das Missionstor ist versiegelt: ${completedMissions}/${chapter?.missions.length??6} Missionen geschafft.`);return}if(!bossGateOpen&&nearBossGate){showHint(bossMessage);return}if(chapter&&elite&&near(scene.campaign.elite)){if(eliteReady)startCampaignBattle('elite');else showHint(eliteMessage);return}if(chapter&&boss&&near(scene.campaign.boss)){if(bossReady)startCampaignBattle('boss');else showHint(bossMessage);return}const encounter=adventure.world.encounters.find(item=>near(item));if(encounter){startTraining(adventure,adventure.modes[0].id);return}if(near(adventure.world.merchant)){go(`/adventure/${adventure.id}/shop`);return}if(near(adventure.world.chest)){go(`/adventure/${adventure.id}/inventory`);return}showHint('Gehe näher an eine Mission, einen Gegner, Händler oder die Truhe.')};
+  useEffect(()=>{const current=positionRef.current,secured=securePosition(current,adventure.world.start,scene,missionsDone,bossGateOpen,Boolean(chapter));if(secured.x!==current.x||secured.y!==current.y){positionRef.current=secured;setPosition(secured);flushPosition()}},[chapter?.index,missionsDone,bossGateOpen]);
+  useEffect(()=>{const flush=()=>flushPosition(),visibility=()=>{if(document.visibilityState==='hidden')flushPosition()};window.addEventListener('pagehide',flush);document.addEventListener('visibilitychange',visibility);return()=>{window.removeEventListener('pagehide',flush);document.removeEventListener('visibilitychange',visibility);flushPosition();if(hintTimerRef.current!==undefined)window.clearTimeout(hintTimerRef.current)}},[flushPosition]);
+  useLayoutEffect(()=>{const element=cameraRef.current;if(!element)return;const update=()=>{const width=element.clientWidth,height=element.clientHeight;if(width&&height)setCameraSize({width,height})};update();if(typeof ResizeObserver==='undefined'){window.addEventListener('resize',update);return()=>window.removeEventListener('resize',update)}const observer=new ResizeObserver(update);observer.observe(element);return()=>observer.disconnect()},[]);
   useEffect(()=>{const key=(event:KeyboardEvent)=>{const moves:Record<string,[number,number]>={arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]};const selected=moves[event.key.toLowerCase()];if(selected){event.preventDefault();move(...selected)}if(event.key==='Enter'||event.key.toLowerCase()==='e')interact()};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key)});
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;
@@ -421,10 +483,12 @@ export function World({adventure,save,profile,onSave}:{adventure:AdventureDefini
     };
     void paint();return()=>{active=false};
   },[adventure,boss,bossReady,bossGateOpen,elite,eliteDone,eliteReady,missionGateOpen,position,profile.avatarPresetId,save.campaign.completedMissionIds,save.clearedEnemyIds,scene]);
-  const mobileCamera=cameraSize.width>0&&cameraSize.width<=620;
-  const cameraLeft=mobileCamera?Math.max(cameraSize.width-960,Math.min(0,cameraSize.width/2-position.x)):0;
-  const cameraTop=mobileCamera?Math.max(cameraSize.height-540,Math.min(0,cameraSize.height/2-position.y)):0;
-  return <div className="page world-page"><BackButton to={`/adventure/${adventure.id}`} label="Zurück"/><div className="heading-row"><div><p className="eyebrow">Begehbare Pixel-D&amp;D-Welt</p><h1>{scene.title}</h1></div><p className="world-hint" role="status">{hint}</p></div>{chapter&&<details className="campaign-map-goal" open><summary><span><small>Kampagnenziel · Kapitel {chapter.index}</small><strong>{chapter.topic}</strong></span><span>{completedMissions}/{chapter.missions.length}<Icon name="chevron-down"/></span></summary><div className="map-goal-body"><div><p>Zwei Wege · Missionen: {completedMissions}/{chapter.missions.length}</p><p>{eliteMessage}</p></div><div><strong>Kapitelboss</strong><p>{bossMessage}</p><p>{bossRequirement}</p></div></div></details>}<div className="world-wrap"><div className="world-camera" ref={cameraRef}><canvas ref={canvasRef} width={960} height={540} style={mobileCamera?{transform:`translate3d(${cameraLeft}px,${cameraTop}px,0)`}:undefined} role="img" aria-label={`${scene.title}: begehbare Karte mit zwei Missionswegen`}/><div className="world-map-legend" aria-hidden="true"><span className={missionsDone?'done':''}><Icon name="flag" size={15}/>{completedMissions}/6</span><span className={eliteDone?'done':eliteReady?'ready':''}><Icon name="sword" size={15}/>Elite</span><span className={bossReady?'ready':''}><Icon name="crown" size={15}/>Boss</span></div></div>{profile.settings.showControlHints&&<div className="world-interaction">{interactionLabel.replace(/^✓\s*/, '')}</div>}<div className="world-mobile-controls"><div className="touch-controls" aria-label="Bewegungssteuerung"><button className="move-up" aria-label="Nach oben" onClick={()=>move(0,-1)}><Icon name="up"/></button><button className="move-left" aria-label="Nach links" onClick={()=>move(-1,0)}><Icon name="left"/></button><button className="move-right" aria-label="Nach rechts" onClick={()=>move(1,0)}><Icon name="right"/></button><button className="move-down" aria-label="Nach unten" onClick={()=>move(0,1)}><Icon name="down"/></button></div><button className="world-action" aria-label="E" onClick={interact}><Icon name="interact"/><span>{actionLabel}</span></button></div></div></div>;
+  const mobileCamera=touchMap&&cameraSize.width>0&&(cameraSize.width<960||cameraSize.height<540);
+  const cameraScale=mobileCamera?Math.max(1,cameraSize.height/540):1;
+  const scaledWidth=960*cameraScale,scaledHeight=540*cameraScale;
+  const cameraLeft=mobileCamera?Math.max(cameraSize.width-scaledWidth,Math.min(0,cameraSize.width/2-position.x*cameraScale)):0;
+  const cameraTop=mobileCamera?Math.max(cameraSize.height-scaledHeight,Math.min(0,cameraSize.height/2-position.y*cameraScale)):0;
+  return <div className="page world-page"><BackButton to={`/adventure/${adventure.id}`} label="Zurück"/><div className="heading-row"><div><p className="eyebrow">Begehbare Pixel-D&amp;D-Welt</p><h1>{scene.title}</h1></div><p className={`world-hint${hint===initialHint?' initial':''}`} role="status">{hint}</p></div>{chapter&&<details className="campaign-map-goal" open={goalOpen} onToggle={event=>setGoalOpen(event.currentTarget.open)}><summary><span><small>Kampagnenziel · Kapitel {chapter.index}</small><strong>{chapter.topic}</strong></span><span><Icon className="world-goal-flag" name="flag" size={15}/>{completedMissions}/{chapter.missions.length}<Icon name="chevron-down"/></span></summary><div className="map-goal-body"><div><p>Zwei Wege · Missionen: {completedMissions}/{chapter.missions.length}</p><p>{eliteMessage}</p></div><div><strong>Kapitelboss</strong><p>{bossMessage}</p><p>{bossRequirement}</p></div></div></details>}<div className="world-wrap"><div className="world-camera" ref={cameraRef}><canvas ref={canvasRef} width={960} height={540} style={mobileCamera?{transform:`translate3d(${cameraLeft}px,${cameraTop}px,0) scale(${cameraScale})`}:undefined} role="img" aria-label={`${scene.title}: begehbare Karte mit zwei Missionswegen`}/><div className="world-map-legend" aria-hidden="true"><span className={missionsDone?'done':''}><Icon name="flag" size={15}/>{completedMissions}/6</span><span className={eliteDone?'done':eliteReady?'ready':''}><Icon name="sword" size={15}/>Elite</span><span className={bossReady?'ready':''}><Icon name="crown" size={15}/>Boss</span></div></div>{profile.settings.showControlHints&&<div className="world-interaction">{interactionLabel.replace(/^✓\s*/, '')}</div>}<div className="world-mobile-controls"><TouchJoystick onMove={move} onStop={flushPosition}/><div className="world-action-wrap">{profile.settings.showControlHints&&hasInteraction&&<span className="world-action-context">{interactionLabel.replace(/^E · /,'')}</span>}<button className={`world-action${hasInteraction?' available':''}`} aria-label="E" onClick={interact}><Icon name="interact"/><span>{actionLabel}</span></button></div></div></div></div>;
 }
 
 function LegacyWorld({adventure,save,profile,onSave}:{adventure:AdventureDefinition;save:AdventureSave;profile:PlayerProfile;onSave:(save:AdventureSave)=>Promise<void>}){

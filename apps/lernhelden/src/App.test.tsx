@@ -83,6 +83,32 @@ describe('Campaign',()=>{
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({world:expect.objectContaining({x:684,y:282})}));
   });
 
+  it('repeats joystick movement, changes direction and persists only the final position',()=>{
+    vi.useFakeTimers();
+    const pointerEvent=window.PointerEvent;
+    try{
+      Object.defineProperty(window,'PointerEvent',{configurable:true,writable:true,value:MouseEvent});
+      const context={fillRect:vi.fn(),drawImage:vi.fn(),save:vi.fn(),restore:vi.fn(),fillText:vi.fn()} as unknown as CanvasRenderingContext2D;
+      vi.spyOn(HTMLCanvasElement.prototype,'getContext').mockReturnValue(context);
+      const save=createAdventureSave(fractionsAdventure),onSave=vi.fn().mockResolvedValue(undefined);
+      render(<World adventure={fractionsAdventure} save={save} profile={createProfile('Testheld')} onSave={onSave}/>);
+      const joystick=screen.getByRole('group',{name:'Bewegungssteuerung'});
+      vi.spyOn(joystick,'getBoundingClientRect').mockReturnValue({x:0,y:0,left:0,top:0,right:104,bottom:104,width:104,height:104,toJSON:()=>({})});
+      fireEvent.pointerDown(joystick,{pointerId:1,clientX:100,clientY:52});
+      act(()=>vi.advanceTimersByTime(120));
+      fireEvent.pointerMove(joystick,{pointerId:1,clientX:52,clientY:0});
+      expect(onSave).not.toHaveBeenCalled();
+      fireEvent.pointerUp(joystick,{pointerId:1,clientX:52,clientY:0});
+      expect(onSave).toHaveBeenCalledTimes(1);
+      expect(onSave).toHaveBeenCalledWith(expect.objectContaining({world:expect.objectContaining({x:138,y:396})}));
+      onSave.mockClear();
+      fireEvent.pointerDown(joystick,{pointerId:2,clientX:0,clientY:52});
+      fireEvent(window,new Event('blur'));
+      expect(onSave).toHaveBeenCalledTimes(1);
+      expect(onSave).toHaveBeenCalledWith(expect.objectContaining({world:expect.objectContaining({x:114,y:396})}));
+    }finally{Object.defineProperty(window,'PointerEvent',{configurable:true,writable:true,value:pointerEvent});vi.useRealTimers()}
+  });
+
   it('offers proper-only and mixed-number choices for standalone fraction practice',()=>{
     const save=createAdventureSave(fractionsAdventure);
     render(<AdventureHome adventure={fractionsAdventure} save={save} profile={createProfile('Testheld')}/>);
