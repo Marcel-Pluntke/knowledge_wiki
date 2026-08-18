@@ -1,23 +1,104 @@
-/**
- * CSS files with the .module.css suffix will be treated as CSS modules
- * and scoped locally.
- */
-
 .heroBanner {
-  padding: 4rem 0;
-  text-align: center;
   position: relative;
   overflow: hidden;
+  padding: clamp(5rem, 11vw, 8.5rem) 0 clamp(4.5rem, 9vw, 7rem);
+  text-align: center;
+  color: var(--ifm-font-color-base);
+  background: transparent;
 }
 
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
-  }
+.heroBanner::before,
+.heroBanner::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(6px);
+}
+
+.heroBanner::before {
+  width: min(44rem, 78vw);
+  height: min(44rem, 78vw);
+  left: 50%;
+  top: -28rem;
+  transform: translateX(-64%);
+  background: radial-gradient(circle, rgba(87, 137, 255, 0.24), transparent 68%);
+}
+
+.heroBanner::after {
+  width: min(38rem, 70vw);
+  height: min(38rem, 70vw);
+  left: 50%;
+  top: -23rem;
+  transform: translateX(18%);
+  background: radial-gradient(circle, rgba(163, 102, 246, 0.22), transparent 68%);
+}
+
+.heroBanner :global(.container) {
+  position: relative;
+  z-index: 1;
+  max-width: 980px;
+}
+
+.heroBanner :global(.hero__title) {
+  margin-bottom: 1.15rem;
+  font-size: clamp(3.2rem, 9vw, 6.7rem);
+  font-weight: 650;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+  color: transparent;
+  background: linear-gradient(110deg, #3f5fdd 5%, #6777ec 38%, #8e6ee8 68%, #b26be6 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+[data-theme='dark'] .heroBanner :global(.hero__title) {
+  background: linear-gradient(110deg, #a8c7fa 5%, #b4b8ff 40%, #c8a7fa 72%, #e1a8ef 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+.heroBanner :global(.hero__subtitle) {
+  max-width: 760px;
+  margin: 0 auto 2rem;
+  color: var(--ifm-color-content-secondary);
+  font-size: clamp(1.08rem, 2vw, 1.35rem);
+  line-height: 1.55;
 }
 
 .buttons {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.75rem;
+}
+
+.buttons :global(.button) {
+  min-height: 50px;
+  padding-inline: 1.45rem;
+  font-size: 0.96rem;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 4.5rem 1.25rem 3.8rem;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .heroBanner {
+    padding-top: 3.8rem;
+  }
+
+  .heroBanner :global(.hero__title) {
+    letter-spacing: -0.045em;
+  }
+
+  .buttons {
+    width: 100%;
+  }
+
+  .buttons :global(.button) {
+    width: min(100%, 320px);
+  }
 }
