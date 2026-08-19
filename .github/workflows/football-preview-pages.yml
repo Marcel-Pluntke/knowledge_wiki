@@ -1,8 +1,8 @@
 name: Football Preview Pages
 
 on:
-  push:
-    branches: [agent/football-mvp]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
