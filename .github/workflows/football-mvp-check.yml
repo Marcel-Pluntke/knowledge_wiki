@@ -1,8 +1,8 @@
 name: Football MVP checks
 
 on:
-  push:
-    branches: [agent/football-mvp]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
