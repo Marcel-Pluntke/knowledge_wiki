@@ -1,5 +1,5 @@
 export const FOOTBALL_MATCH_QUESTIONS = 10;
-export const FOOTBALL_KEEPER_SAVE_CHANCE = 0.3;
+export const FOOTBALL_KEEPER_SAVE_WHEN_GUESSED_CHANCE = 0.6;
 
 export type FootballDirection = 'upper' | 'lower';
 export type FootballPlayType = 'dribble' | 'shot';
@@ -21,24 +21,12 @@ export function footballPlayType(ballPosition: number): FootballPlayType {
   return ballPosition >= 2 ? 'shot' : 'dribble';
 }
 
-export function chooseOpponentDirection(
-  playType: FootballPlayType,
-  playerDirection: FootballDirection,
-  random: () => number,
-): FootballDirection {
-  if (playType === 'shot') {
-    const keeperReadsShot = random() < FOOTBALL_KEEPER_SAVE_CHANCE;
-    if (keeperReadsShot) return playerDirection;
-    return playerDirection === 'upper' ? 'lower' : 'upper';
-  }
-  return random() < .5 ? 'upper' : 'lower';
-}
-
 export function resolveFootballPlay(
   ballPosition: number,
   correct: boolean,
   playerDirection: FootballDirection,
   opponentDirection: FootballDirection,
+  random: () => number = Math.random,
 ): FootballPlayResult {
   const playType = footballPlayType(ballPosition);
 
@@ -51,7 +39,9 @@ export function resolveFootballPlay(
   }
 
   if (playType === 'shot') {
-    if (playerDirection !== opponentDirection) {
+    const keeperGuessedCorner = playerDirection === opponentDirection;
+    const keeperSaves = keeperGuessedCorner && random() < FOOTBALL_KEEPER_SAVE_WHEN_GUESSED_CHANCE;
+    if (!keeperSaves) {
       return {ballPosition: 0, playerGoal: true, opponentGoal: false, playType, outcome: 'goal'};
     }
     return {ballPosition: 1, playerGoal: false, opponentGoal: false, playType, outcome: 'saved'};
