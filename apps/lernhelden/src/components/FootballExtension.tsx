@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import type {CSSProperties, FormEvent} from 'react';
 import {createPortal} from 'react-dom';
 import type {Question} from '@lernhelden/engine';
@@ -15,11 +15,27 @@ import {
   type FootballPlayType,
   type FootballSituation,
 } from '../footballGame';
+import {
+  DEFAULT_FOOTBALL_CLUB_STATE,
+  FOOTBALL_KEEPER_KIT,
+  FOOTBALL_KITS,
+  FOOTBALL_OPPONENT_KIT,
+  buyFootballKit,
+  equipFootballKit,
+  footballKitById,
+  footballMatchReward,
+  normalizeFootballClubState,
+  type FootballClubState,
+  type FootballMatchReward,
+} from '../footballClub';
+import {FootballPixelPlayer} from './FootballPixelPlayer';
 import './football.css';
 import './footballV2.css';
 import './footballGameplayV3.css';
+import './footballClub.css';
 
 type MatchPhase = 'select' | 'playing' | 'finished';
+type ClubPanel = 'shop' | 'team' | null;
 
 type FootballRecord = {
   matches: number;
@@ -47,6 +63,7 @@ const footballActions: Array<{id: FootballAction; title: string; short: string; 
 
 const TEAM_PLAYER_TOPS = [50, 28, 72] as const;
 const recordKey = 'lernhelden:football:v1';
+const clubKey = 'lernhelden:football:club:v1';
 const emptyRecord: FootballRecord = {matches: 0, wins: 0, goals: 0, bestGoals: 0};
 
 const routeFromHash = () => location.hash.replace(/^#/, '') || '/home';
@@ -65,6 +82,15 @@ function readRecord(): FootballRecord {
     };
   } catch {
     return emptyRecord;
+  }
+}
+
+function readClubState(): FootballClubState {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(clubKey) ?? 'null') as Partial<FootballClubState> | null;
+    return normalizeFootballClubState(parsed);
+  } catch {
+    return DEFAULT_FOOTBALL_CLUB_STATE;
   }
 }
 
@@ -145,11 +171,7 @@ function nextSituationSuffix(situation: FootballSituation) {
   return '';
 }
 
-function directionOption(
-  action: FootballAction | 'shot',
-  direction: FootballDirection,
-  activePlayer: number,
-) {
+function directionOption(action: FootballAction | 'shot', direction: FootballDirection, activePlayer: number) {
   if (action === 'shot') {
     return direction === 'upper'
       ? {mark: 'L', title: 'Linke Ecke', hint: 'Schuss platzieren'}
@@ -209,13 +231,94 @@ function FootballCard() {
     </div>
     <span className="status">MVP</span>
     <h2>Mathe Fußball</h2>
-    <p>Brüche lösen, im 3 gegen 3 kombinieren und Tore schießen.</p>
+    <p>3 gegen 3 spielen, Club-Münzen verdienen und dein Team ausstatten.</p>
     <button onClick={() => go('/football')}>Match starten <span aria-hidden="true">›</span></button>
   </article>;
 }
 
+function FootballShop({clubState, onBuy, onClose, onTeam}: {
+  clubState: FootballClubState;
+  onBuy: (kitId: string) => void;
+  onClose: () => void;
+  onTeam: () => void;
+}) {
+  return <main className="football-club-screen">
+    <section className="football-club-heading">
+      <div><small>Club-Ausstattung</small><h1>Trikot-Shop</h1><p>Verdiene Club-Münzen in abgeschlossenen Matches und schalte neue Pixel-Trikots frei.</p></div>
+      <div className="football-club-balance"><span>Club-Münzen</span><strong>{clubState.coins}</strong></div>
+    </section>
+
+    <section className="football-kit-grid">
+      {FOOTBALL_KITS.map((kit, index) => {
+        const owned = clubState.ownedKitIds.includes(kit.id);
+        const missing = Math.max(0, kit.price - clubState.coins);
+        return <article className={`football-kit-card${owned ? ' owned' : ''}`} key={kit.id}>
+          <div className="football-kit-preview"><FootballPixelPlayer kit={kit} number={index + 7} playerIndex={index % 3}/></div>
+          <div className="football-kit-copy"><small>{kit.pattern}</small><strong>{kit.name}</strong><span>{kit.price === 0 ? 'Starttrikot' : `${kit.price} Club-Münzen`}</span></div>
+          <button
+            type="button"
+            className={owned ? 'football-secondary' : 'football-primary'}
+            disabled={owned || clubState.coins < kit.price}
+            onClick={() => onBuy(kit.id)}
+          >
+            {owned ? 'Im Schrank' : clubState.coins >= kit.price ? 'Kaufen' : `Fehlen ${missing}`}
+          </button>
+        </article>;
+      })}
+    </section>
+
+    <div className="football-club-actions">
+      <button className="football-primary" type="button" onClick={onTeam}>Zum Team</button>
+      <button className="football-secondary" type="button" onClick={onClose}>Zurück</button>
+    </div>
+  </main>;
+}
+
+function FootballTeam({clubState, onEquip, onClose, onShop}: {
+  clubState: FootballClubState;
+  onEquip: (playerIndex: number, kitId: string) => void;
+  onClose: () => void;
+  onShop: () => void;
+}) {
+  const ownedKits = FOOTBALL_KITS.filter(kit => clubState.ownedKitIds.includes(kit.id));
+  return <main className="football-club-screen">
+    <section className="football-club-heading">
+      <div><small>Mannschaft</small><h1>Dein 3er-Team</h1><p>Jeder deiner drei Spieler kann ein eigenes gekauftes Trikot tragen. Die Auswahl erscheint direkt auf dem Spielfeld.</p></div>
+      <div className="football-club-balance"><span>Trikots</span><strong>{ownedKits.length}</strong></div>
+    </section>
+
+    <section className="football-squad-grid">
+      {[0, 1, 2].map(playerIndex => {
+        const currentKit = footballKitById(clubState.equippedKitIds[playerIndex]);
+        return <article className="football-squad-card" key={playerIndex}>
+          <div className="football-squad-player"><FootballPixelPlayer kit={currentKit} number={playerIndex + 1} playerIndex={playerIndex}/></div>
+          <div className="football-squad-title"><small>Stammspieler</small><h2>Spieler {playerIndex + 1}</h2><span>{currentKit.name}</span></div>
+          <div className="football-owned-kits" aria-label={`Trikotauswahl Spieler ${playerIndex + 1}`}>
+            {ownedKits.map(kit => <button
+              type="button"
+              key={kit.id}
+              className={currentKit.id === kit.id ? 'selected' : ''}
+              onClick={() => onEquip(playerIndex, kit.id)}
+              title={kit.name}
+            >
+              <span className="football-kit-swatch" style={{'--kit-primary': kit.primary, '--kit-secondary': kit.secondary} as CSSProperties}/>
+              <span>{kit.name}</span>
+            </button>)}
+          </div>
+        </article>;
+      })}
+    </section>
+
+    <div className="football-club-actions">
+      <button className="football-primary" type="button" onClick={onShop}>Zum Trikot-Shop</button>
+      <button className="football-secondary" type="button" onClick={onClose}>Zurück</button>
+    </div>
+  </main>;
+}
+
 function FootballGame() {
   const [phase, setPhase] = useState<MatchPhase>('select');
+  const [clubPanel, setClubPanel] = useState<ClubPanel>(null);
   const [modeId, setModeId] = useState<(typeof footballModes)[number]['id']>('add');
   const [question, setQuestion] = useState<Question | null>(null);
   const [sequence, setSequence] = useState(0);
@@ -242,6 +345,9 @@ function FootballGame() {
   const [feedback, setFeedback] = useState('');
   const [turnLocked, setTurnLocked] = useState(false);
   const [record, setRecord] = useState<FootballRecord>(readRecord);
+  const [clubState, setClubState] = useState<FootballClubState>(readClubState);
+  const [lastReward, setLastReward] = useState<FootballMatchReward | null>(null);
+  const rewardGrantedRef = useRef(false);
 
   const activeMode = useMemo(() => footballModes.find(mode => mode.id === modeId) ?? footballModes[0], [modeId]);
   const progress = Math.round((answered / FOOTBALL_MATCH_QUESTIONS) * 100);
@@ -251,6 +357,14 @@ function FootballGame() {
     ? lastAction
     : currentPlayType === 'shot' ? 'shot' : selectedAction;
   const situationBanner = situationCopy(situation);
+
+  const saveClubState = (next: FootballClubState) => {
+    setClubState(next);
+    localStorage.setItem(clubKey, JSON.stringify(next));
+  };
+
+  const buyKit = (kitId: string) => saveClubState(buyFootballKit(clubState, kitId));
+  const equipKit = (playerIndex: number, kitId: string) => saveClubState(equipFootballKit(clubState, playerIndex, kitId));
 
   const makeQuestion = (nextSequence: number, selectedMode = modeId) => fractionsAdventure.questionProvider.next({
     modeId: selectedMode,
@@ -274,6 +388,7 @@ function FootballGame() {
   };
 
   const startMatch = (selectedMode = modeId) => {
+    setClubPanel(null);
     setModeId(selectedMode);
     setPhase('playing');
     setSequence(1);
@@ -289,10 +404,17 @@ function FootballGame() {
     setMomentum(0);
     setSituation('normal');
     setPendingSituation('normal');
+    setLastReward(null);
+    rewardGrantedRef.current = false;
     resetAnswer();
   };
 
   const finishMatch = () => {
+    if (rewardGrantedRef.current) return;
+    rewardGrantedRef.current = true;
+    const reward = footballMatchReward(correctAnswers, playerGoals, opponentGoals);
+    setLastReward(reward);
+    saveClubState({...clubState, coins: clubState.coins + reward.total});
     setPhase('finished');
     setRecord(current => {
       const next = {
@@ -427,15 +549,37 @@ function FootballGame() {
     <header className="football-topbar">
       <button className="football-back" onClick={() => go('/home')}>Zur Spieleauswahl</button>
       <div><small>Lernhelden</small><strong>Mathe Fußball</strong></div>
-      <span className="football-record">{record.wins} Siege · {record.goals} Tore</span>
+      <span className="football-club-tools">
+        <b>{clubState.coins} Club-Münzen</b>
+        {phase !== 'playing' && <>
+          <button type="button" onClick={() => setClubPanel('team')}>Team</button>
+          <button type="button" onClick={() => setClubPanel('shop')}>Trikot-Shop</button>
+        </>}
+      </span>
     </header>
 
-    {phase === 'select' && <main className="football-start">
+    {clubPanel === 'shop' && <FootballShop
+      clubState={clubState}
+      onBuy={buyKit}
+      onClose={() => setClubPanel(null)}
+      onTeam={() => setClubPanel('team')}
+    />}
+
+    {clubPanel === 'team' && <FootballTeam
+      clubState={clubState}
+      onEquip={equipKit}
+      onClose={() => setClubPanel(null)}
+      onShop={() => setClubPanel('shop')}
+    />}
+
+    {!clubPanel && phase === 'select' && <main className="football-start">
       <section className="football-hero-panel">
         <p className="football-kicker">3 gegen 3 · Brüche-Liga</p>
         <h1>Rechnen. Kombinieren. Tore schießen.</h1>
-        <p>Wähle einen Modus und das Match startet sofort. Mit Pass, Dribbling und Steilpass spielst du dich durch drei Gegner. Richtige Serien bauen Momentum auf und erzeugen besondere Torchancen.</p>
-        <div className="football-mini-pitch" aria-hidden="true"><span className="football-ball"/></div>
+        <p>Wähle einen Modus und das Match startet sofort. Mit Pass, Dribbling und Steilpass spielst du dich durch drei Gegner. Richtige Serien bauen Momentum auf. Nach jedem Match verdienst du Club-Münzen für neue Trikots.</p>
+        <div className="football-mini-squad" aria-hidden="true">
+          {[0, 1, 2].map(index => <FootballPixelPlayer key={index} kit={footballKitById(clubState.equippedKitIds[index])} number={index + 1} playerIndex={index}/>) }
+        </div>
       </section>
       <section className="football-mode-panel">
         <div className="football-section-heading"><div><small>Trainingsart</small><h2>Wähle dein Match</h2></div><span>Startet sofort</span></div>
@@ -448,7 +592,7 @@ function FootballGame() {
       </section>
     </main>}
 
-    {phase === 'playing' && question && <main className="football-match">
+    {!clubPanel && phase === 'playing' && question && <main className="football-match">
       <section className="football-scoreboard">
         <div><small>DEIN TEAM</small><strong>{playerGoals}</strong></div>
         <span><small>{activeMode.title}</small><b>{answered}/{FOOTBALL_MATCH_QUESTIONS}</b></span>
@@ -476,12 +620,13 @@ function FootballGame() {
         {[0, 1, 2].map(index => {
           const point = teamPlayerPoint(index, ballPosition, activePlayer, displayPlayType);
           const isTarget = targetIndex === index;
+          const kit = footballKitById(clubState.equippedKitIds[index]);
           return <div
             key={`team-${index}`}
             className={`football-field-player football-team-player player-${index + 1}${activePlayer === index ? ' active' : ''}${isTarget ? ' pass-target' : ''}`}
             style={{left: `${point.left}%`, top: `${point.top}%`}}
             aria-label={`Eigener Spieler ${index + 1}${activePlayer === index ? ', am Ball' : ''}`}
-          ><span>{index + 1}</span></div>;
+          ><FootballPixelPlayer kit={kit} number={index + 1} playerIndex={index}/></div>;
         })}
 
         {[0, 1, 2].map(index => {
@@ -496,7 +641,7 @@ function FootballGame() {
             className={`football-field-player football-opponent-player opponent-${index + 1}${motionClasses}`}
             style={{left: `${point.left}%`, top: `${point.top}%`}}
             aria-label={isKeeper ? 'Gegnerischer Torwart' : `Gegner ${index + 1}`}
-          ><span>{isKeeper ? 'TW' : `A${index + 1}`}</span></div>;
+          ><FootballPixelPlayer kit={isKeeper ? FOOTBALL_KEEPER_KIT : FOOTBALL_OPPONENT_KIT} number={index + 7} playerIndex={index} keeper={isKeeper}/></div>;
         })}
 
         {displayAction && displayAction !== 'shot' && playerDirection && <span className={`football-action-route route-${displayAction} route-${playerDirection}`} aria-hidden="true"/>}
@@ -564,14 +709,22 @@ function FootballGame() {
       </section>
     </main>}
 
-    {phase === 'finished' && <main className="football-finish">
+    {!clubPanel && phase === 'finished' && <main className="football-finish">
       <section className="football-result-card">
         <p className="football-kicker">Abpfiff</p>
         <h1>{playerGoals > opponentGoals ? 'Sieg!' : playerGoals === opponentGoals ? 'Unentschieden' : 'Nächstes Match holen wir uns.'}</h1>
         <div className="football-final-score"><span>{playerGoals}</span><b>:</b><span>{opponentGoals}</span></div>
         <p>{correctAnswers} von {FOOTBALL_MATCH_QUESTIONS} Aufgaben richtig gelöst.</p>
-        <div className="football-result-actions">
+        {lastReward && <div className="football-match-reward">
+          <small>Match-Belohnung</small>
+          <strong>+{lastReward.total} Club-Münzen</strong>
+          <span>Match {lastReward.base} · Rechnen {lastReward.correct} · Tore {lastReward.goals}{lastReward.win ? ` · Sieg ${lastReward.win}` : ''}{lastReward.perfect ? ` · Perfekt ${lastReward.perfect}` : ''}</span>
+          <b>Kontostand: {clubState.coins}</b>
+        </div>}
+        <div className="football-result-actions football-result-actions-club">
           <button className="football-primary" onClick={() => startMatch(modeId)}>Noch ein Match</button>
+          <button className="football-secondary" onClick={() => setClubPanel('shop')}>Trikot-Shop</button>
+          <button className="football-secondary" onClick={() => setClubPanel('team')}>Team anpassen</button>
           <button className="football-secondary" onClick={() => setPhase('select')}>Modus wechseln</button>
           <button className="football-secondary" onClick={() => go('/home')}>Zur Spieleauswahl</button>
         </div>
