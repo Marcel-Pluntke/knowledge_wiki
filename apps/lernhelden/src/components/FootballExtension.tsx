@@ -10,6 +10,7 @@ import {
   resolveFootballPlay,
   splitFractionExpression,
   type FootballDirection,
+  type FootballOutcome,
   type FootballPlayType,
 } from '../footballGame';
 import './football.css';
@@ -126,6 +127,7 @@ function FootballGame() {
   const [modeId, setModeId] = useState<(typeof footballModes)[number]['id']>('add');
   const [question, setQuestion] = useState<Question | null>(null);
   const [sequence, setSequence] = useState(0);
+  const [whole, setWhole] = useState('');
   const [numerator, setNumerator] = useState('');
   const [denominator, setDenominator] = useState('');
   const [answered, setAnswered] = useState(0);
@@ -136,6 +138,7 @@ function FootballGame() {
   const [playerDirection, setPlayerDirection] = useState<FootballDirection | null>(null);
   const [opponentDirection, setOpponentDirection] = useState<FootballDirection | null>(null);
   const [lastPlayType, setLastPlayType] = useState<FootballPlayType | null>(null);
+  const [lastOutcome, setLastOutcome] = useState<FootballOutcome | null>(null);
   const [feedback, setFeedback] = useState('');
   const [turnLocked, setTurnLocked] = useState(false);
   const [record, setRecord] = useState<FootballRecord>(readRecord);
@@ -153,11 +156,13 @@ function FootballGame() {
   });
 
   const resetAnswer = () => {
+    setWhole('');
     setNumerator('');
     setDenominator('');
     setPlayerDirection(null);
     setOpponentDirection(null);
     setLastPlayType(null);
+    setLastOutcome(null);
     setFeedback('');
     setTurnLocked(false);
   };
@@ -191,7 +196,8 @@ function FootballGame() {
 
   const submit = () => {
     if (!question || turnLocked || !playerDirection || !numerator.trim() || !denominator.trim()) return;
-    const answer = `${numerator.trim()}/${denominator.trim()}`;
+    const fractionAnswer = `${numerator.trim()}/${denominator.trim()}`;
+    const answer = whole.trim() ? `${whole.trim()} ${fractionAnswer}` : fractionAnswer;
     const correct = fractionsAdventure.questionProvider.evaluate(question, answer);
     const defendingDirection: FootballDirection = Math.random() < .5 ? 'upper' : 'lower';
     const play = resolveFootballPlay(ballPosition, correct, playerDirection, defendingDirection);
@@ -201,6 +207,7 @@ function FootballGame() {
     setBallPosition(play.ballPosition);
     setOpponentDirection(defendingDirection);
     setLastPlayType(play.playType);
+    setLastOutcome(play.outcome);
     setTurnLocked(true);
 
     if (correct) setCorrectAnswers(value => value + 1);
@@ -244,6 +251,7 @@ function FootballGame() {
 
   const actorDirectionClass = turnLocked && opponentDirection ? ` ${opponentDirection}` : '';
   const ballDirectionClass = playerDirection ? ` choice-${playerDirection}` : '';
+  const outcomeClass = turnLocked && lastOutcome ? ` outcome-${lastOutcome}` : '';
 
   return <div className="football-shell" role="dialog" aria-label="Mathe Fußball">
     <header className="football-topbar">
@@ -277,7 +285,7 @@ function FootballGame() {
         <div><small>GEGNER</small><strong>{opponentGoals}</strong></div>
       </section>
 
-      <section className={`football-pitch play-${displayPlayType}`} aria-label="Spielfeld mit aktueller Ballposition">
+      <section className={`football-pitch play-${displayPlayType}${outcomeClass}`} aria-label="Spielfeld mit aktueller Ballposition">
         <div className="football-goal left" aria-hidden="true"/>
         <div className="football-goal right" aria-hidden="true"/>
         <div className="football-halfway" aria-hidden="true"/>
@@ -312,10 +320,16 @@ function FootballGame() {
         </div>
 
         <form className="football-answer" onSubmit={handleSubmit}>
-          <div className="football-fraction-input">
-            <input aria-label="Zähler" inputMode="numeric" pattern="-?[0-9]*" value={numerator} onChange={event => setNumerator(event.target.value)} disabled={turnLocked}/>
-            <span/>
-            <input aria-label="Nenner" inputMode="numeric" pattern="-?[0-9]*" value={denominator} onChange={event => setDenominator(event.target.value)} disabled={turnLocked}/>
+          <div className="football-answer-value">
+            <label className="football-whole-input">
+              <span>Ganze</span>
+              <input aria-label="Ganze Zahl" inputMode="numeric" pattern="-?[0-9]*" placeholder="0" value={whole} onChange={event => setWhole(event.target.value)} disabled={turnLocked}/>
+            </label>
+            <div className="football-fraction-input">
+              <input aria-label="Zähler" inputMode="numeric" pattern="-?[0-9]*" value={numerator} onChange={event => setNumerator(event.target.value)} disabled={turnLocked}/>
+              <span/>
+              <input aria-label="Nenner" inputMode="numeric" pattern="-?[0-9]*" value={denominator} onChange={event => setDenominator(event.target.value)} disabled={turnLocked}/>
+            </div>
           </div>
           <button className="football-primary" disabled={!turnLocked && (!playerDirection || !numerator.trim() || !denominator.trim())} type="submit">
             {turnLocked ? answered >= FOOTBALL_MATCH_QUESTIONS ? 'Ergebnis anzeigen' : 'Nächste Aktion' : 'Spielzug ausführen'}
