@@ -1,0 +1,92 @@
+.football-difficulty-panel {
+  margin: 0 0 18px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 1.2fr);
+  gap: 14px;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 16px;
+  background: rgba(255,255,255,.035);
+}
+
+.football-difficulty-intro {
+  display: grid;
+  gap: 2px;
+}
+
+.football-difficulty-intro small {
+  color: #8bd8a4;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.football-difficulty-intro strong {
+  font-size: 16px;
+}
+
+.football-difficulty-intro span {
+  color: #97aa9e;
+  font-size: 11px;
+}
+
+.football-difficulty-rows {
+  display: grid;
+  gap: 8px;
+}
+
+.football-difficulty-row {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 105px 1fr;
+  gap: 9px;
+  align-items: center;
+}
+
+.football-difficulty-row > strong {
+  color: #dceae0;
+  font-size: 12px;
+}
+
+.football-difficulty-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.football-difficulty-choices button {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  color: #dce9df;
+  background: rgba(255,255,255,.045);
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.football-difficulty-choices button.selected {
+  border-color: rgba(91,225,135,.72);
+  color: #07150c;
+  background: linear-gradient(135deg, #78ed9c, #42ce70);
+}
+
+@media (max-width: 760px) {
+  .football-difficulty-panel {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .football-difficulty-row {
+    grid-template-columns: 92px 1fr;
+  }
+
+  .football-difficulty-choices button {
+    min-height: 42px;
+    font-size: 13px;
+  }
+}
