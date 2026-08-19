@@ -1,7 +1,8 @@
 import {useEffect} from 'react';
 import './footballMotion.css';
 
-const PLAYBACK_MS = 1650;
+const DRIBBLE_PLAYBACK_MS = 1500;
+const SHOT_PLAYBACK_MS = 2450;
 
 export function FootballMotionEnhancer() {
   useEffect(() => {
@@ -34,19 +35,22 @@ export function FootballMotionEnhancer() {
       pitch.classList.add('football-playback');
 
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const isShot = pitch.classList.contains('play-shot');
+      const playbackMs = isShot ? SHOT_PLAYBACK_MS : DRIBBLE_PLAYBACK_MS;
+
       window.requestAnimationFrame(() => {
         pitch.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block: 'center'});
       });
 
       playbackTimer = window.setTimeout(() => {
         pitch.classList.remove('football-playback');
-      }, reduceMotion ? 250 : PLAYBACK_MS);
+      }, reduceMotion ? 250 : playbackMs);
 
       returnTimer = window.setTimeout(() => {
         const questionCard = document.querySelector<HTMLElement>('.football-question-card');
         if (!questionCard || !document.querySelector('.football-shell')) return;
         questionCard.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block: 'start'});
-      }, reduceMotion ? 450 : PLAYBACK_MS + 250);
+      }, reduceMotion ? 450 : playbackMs + 300);
     };
 
     const observer = new MutationObserver(runPlayback);
