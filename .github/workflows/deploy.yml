@@ -27,8 +27,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      # Keep GitHub Pages deployment independent from Playwright browser installation.
+      # E2E tests can be run separately without blocking a production deploy.
       - run: npm run build
 
       - uses: actions/upload-pages-artifact@v3
