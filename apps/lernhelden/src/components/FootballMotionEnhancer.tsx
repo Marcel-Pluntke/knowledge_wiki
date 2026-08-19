@@ -1,5 +1,6 @@
 import {useEffect} from 'react';
 import './footballMotion.css';
+import './footballGoalBanner.css';
 
 const DRIBBLE_PLAYBACK_MS = 1500;
 const SHOT_PLAYBACK_MS = 2450;
@@ -13,6 +14,32 @@ export function FootballMotionEnhancer() {
 
     const clearWholePlaceholder = () => {
       document.querySelector<HTMLInputElement>('input[aria-label="Ganze Zahl"]')?.removeAttribute('placeholder');
+    };
+
+    const removeGoalScene = () => {
+      document.querySelector('.football-goal-scene')?.remove();
+    };
+
+    const addGoalScene = (pitch: HTMLElement) => {
+      removeGoalScene();
+      const scores = Array.from(document.querySelectorAll<HTMLElement>('.football-scoreboard > div strong'));
+      const scoreText = scores.length >= 2 ? `${scores[0].textContent ?? ''} : ${scores[1].textContent ?? ''}` : '';
+
+      const scene = document.createElement('div');
+      scene.className = 'football-goal-scene';
+      scene.setAttribute('aria-hidden', 'true');
+
+      const label = document.createElement('strong');
+      label.textContent = 'TOOOR!';
+      scene.appendChild(label);
+
+      if (scoreText.trim()) {
+        const score = document.createElement('span');
+        score.textContent = scoreText;
+        scene.appendChild(score);
+      }
+
+      pitch.appendChild(scene);
     };
 
     const runPlayback = () => {
@@ -39,6 +66,7 @@ export function FootballMotionEnhancer() {
       window.clearTimeout(playbackTimer);
       window.clearTimeout(advanceTimer);
       window.clearTimeout(scrollTimer);
+      removeGoalScene();
 
       pitch.classList.remove('football-playback');
       void pitch.offsetWidth;
@@ -46,8 +74,11 @@ export function FootballMotionEnhancer() {
 
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const isShot = pitch.classList.contains('play-shot');
+      const isGoal = pitch.classList.contains('outcome-goal') || text.startsWith('Tor!');
       const playbackMs = reduceMotion ? 300 : isShot ? SHOT_PLAYBACK_MS : DRIBBLE_PLAYBACK_MS;
       const finalAction = submitButton?.textContent?.includes('Ergebnis') ?? false;
+
+      if (isGoal) addGoalScene(pitch);
 
       if (submitButton) {
         submitButton.textContent = finalAction ? 'Ergebnis folgt …' : 'Nächste Aufgabe …';
@@ -61,6 +92,7 @@ export function FootballMotionEnhancer() {
 
       playbackTimer = window.setTimeout(() => {
         pitch.classList.remove('football-playback');
+        removeGoalScene();
       }, playbackMs);
 
       advanceTimer = window.setTimeout(() => {
@@ -82,6 +114,7 @@ export function FootballMotionEnhancer() {
 
     return () => {
       observer.disconnect();
+      removeGoalScene();
       window.clearTimeout(playbackTimer);
       window.clearTimeout(advanceTimer);
       window.clearTimeout(scrollTimer);
