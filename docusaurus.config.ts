@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Knowledge Wiki',
   tagline: 'Documentation, Automation, Test Engineering',
-  favicon: 'img/icon_green.png',
+  favicon: 'img/knowledge-wiki-logo-blue-green.png',
   staticDirectories: ['static', 'apps/lernhelden/dist'],
 
   future: {
@@ -67,7 +67,7 @@ const config: Config = {
       title: 'Knowledge Wiki',
       logo: {
         alt: 'Knowledge Wiki Logo',
-        src: 'img/icon_green.png',
+        src: 'img/knowledge-wiki-logo-blue-green.png',
       },
       items: [
         {
