@@ -4,6 +4,8 @@ import Heading from '@theme/Heading';
 
 import styles from './styles.module.css';
 
+const IEC_EXPONENT = 0.61;
+
 function parseNumber(value: string): number {
   const normalized = value.trim().replace(',', '.');
   if (!normalized) return Number.NaN;
@@ -72,31 +74,40 @@ function CurrentAtLimitCalculator() {
       return {error: 'Temperaturen müssen über der Umgebung liegen und der Strom muss größer als 0 A sein.'} as const;
     }
 
-    const currentAtLimit = iMeasured * Math.sqrt(deltaLimit / deltaMeasured);
+    const currentAtLimit = iMeasured * Math.pow(deltaLimit / deltaMeasured, IEC_EXPONENT);
     const changePercent = ((currentAtLimit / iMeasured) - 1) * 100;
+    const deltaDifference = Math.abs(deltaLimit - deltaMeasured);
+    const withinIecRange = deltaDifference <= 5;
 
-    return {deltaMeasured, deltaLimit, currentAtLimit, changePercent} as const;
+    return {
+      deltaMeasured,
+      deltaLimit,
+      currentAtLimit,
+      changePercent,
+      deltaDifference,
+      withinIecRange,
+    } as const;
   }, [measuredTemp, ambientTemp, limitTemp, measuredCurrent]);
 
   return (
     <section className={styles.card}>
       <div className={styles.cardHeader}>
-        <span className={styles.kicker}>Rechner 1</span>
+        <span className={styles.kicker}>Rechner 1 · IEC-Korrektur</span>
         <Heading as="h2">Strom am Temperaturgrenzwert</Heading>
         <p>
-          Ermittelt aus einem stabilen Messergebnis den Strom, bei dem der eingegebene Temperaturgrenzwert
-          rechnerisch erreicht wird.
+          Ermittelt aus einem Prüfergebnis den Strom, bei dem die maximal zulässige Erwärmung rechnerisch
+          erreicht wird.
         </p>
       </div>
 
       <div className={styles.fields}>
         <NumberField id="current-measured-temp" label="Gemessene Temperatur" value={measuredTemp} onChange={setMeasuredTemp} unit="°C" placeholder="z. B. 92" />
-        <NumberField id="current-ambient-temp" label="Umgebungstemperatur (Standard 35 °C)" value={ambientTemp} onChange={setAmbientTemp} unit="°C" />
-        <NumberField id="current-limit-temp" label="Grenztemperatur der Messstelle" value={limitTemp} onChange={setLimitTemp} unit="°C" placeholder="z. B. 105" />
-        <NumberField id="current-measured-current" label="Gemessener Strom" value={measuredCurrent} onChange={setMeasuredCurrent} unit="A" placeholder="z. B. 5900" />
+        <NumberField id="current-ambient-temp" label="Umgebungstemperatur (Istwert; 35 °C vorbelegt)" value={ambientTemp} onChange={setAmbientTemp} unit="°C" />
+        <NumberField id="current-limit-temp" label="Grenztemperatur der Messstelle" value={limitTemp} onChange={setLimitTemp} unit="°C" placeholder="z. B. 95" />
+        <NumberField id="current-measured-current" label="Gemessener Prüfstrom" value={measuredCurrent} onChange={setMeasuredCurrent} unit="A" placeholder="z. B. 5900" />
       </div>
 
-      <div className={styles.formula}>I₂ = I₁ · √(ΔT₂ / ΔT₁)</div>
+      <div className={styles.formula}>I_Grenz = I_Mess · (ΔT_Grenz / ΔT_Mess)^0,61</div>
 
       <div className={styles.resultBox} aria-live="polite">
         {!result && <span className={styles.resultHint}>Werte eingeben – das Ergebnis erscheint sofort.</span>}
@@ -107,6 +118,11 @@ function CurrentAtLimitCalculator() {
             <strong className={styles.resultValue}>{formatNumber(result.currentAtLimit, 0)} A</strong>
             <span className={styles.resultMeta}>
               ΔT Messung: {formatNumber(result.deltaMeasured)} K · ΔT Grenzwert: {formatNumber(result.deltaLimit)} K · Änderung: {result.changePercent >= 0 ? '+' : ''}{formatNumber(result.changePercent, 2)} %
+            </span>
+            <span className={result.withinIecRange ? styles.okNote : styles.warning}>
+              {result.withinIecRange
+                ? `IEC-Bedingung erfüllt: Abweichung der Erwärmung ${formatNumber(result.deltaDifference)} K (≤ 5 K).`
+                : `IEC-Bedingung nicht erfüllt: Abweichung der Erwärmung ${formatNumber(result.deltaDifference)} K (> 5 K). Ergebnis nur als Orientierung verwenden.`}
             </span>
           </>
         )}
@@ -136,7 +152,7 @@ function TemperatureAtCurrentCalculator() {
       return {error: 'Die gemessene Temperatur muss über der Umgebung liegen; beide Ströme müssen größer als 0 A sein.'} as const;
     }
 
-    const deltaTarget = deltaMeasured * Math.pow(iTarget / iMeasured, 2);
+    const deltaTarget = deltaMeasured * Math.pow(iTarget / iMeasured, 1 / IEC_EXPONENT);
     const targetTemp = tAmbient + deltaTarget;
     const limit = Number.isFinite(tLimit) ? tLimit : null;
     const margin = limit === null ? null : limit - targetTemp;
@@ -147,23 +163,23 @@ function TemperatureAtCurrentCalculator() {
   return (
     <section className={styles.card}>
       <div className={styles.cardHeader}>
-        <span className={styles.kicker}>Rechner 2</span>
+        <span className={styles.kicker}>Rechner 2 · Näherung</span>
         <Heading as="h2">Temperatur bei gewünschtem Strom</Heading>
         <p>
-          Rechnet ein vorhandenes Messergebnis auf einen anderen Strom hoch oder herunter – zum Beispiel von
-          5.900 A auf 6.000 A.
+          Kehrt dieselbe Kennlinie mathematisch um und schätzt die Temperatur für einen anderen Strom – zum
+          Beispiel von 5.900 A auf 6.000 A.
         </p>
       </div>
 
       <div className={styles.fields}>
         <NumberField id="temp-measured-temp" label="Gemessene Temperatur" value={measuredTemp} onChange={setMeasuredTemp} unit="°C" placeholder="z. B. 92" />
-        <NumberField id="temp-ambient-temp" label="Umgebungstemperatur (Standard 35 °C)" value={ambientTemp} onChange={setAmbientTemp} unit="°C" />
+        <NumberField id="temp-ambient-temp" label="Umgebungstemperatur (Istwert; 35 °C vorbelegt)" value={ambientTemp} onChange={setAmbientTemp} unit="°C" />
         <NumberField id="temp-measured-current" label="Gemessener Strom" value={measuredCurrent} onChange={setMeasuredCurrent} unit="A" />
         <NumberField id="temp-target-current" label="Gewünschter Strom" value={targetCurrent} onChange={setTargetCurrent} unit="A" />
         <NumberField id="temp-limit-temp" label="Grenztemperatur (optional)" value={limitTemp} onChange={setLimitTemp} unit="°C" placeholder="z. B. 105" />
       </div>
 
-      <div className={styles.formula}>ΔT₂ = ΔT₁ · (I₂ / I₁)²</div>
+      <div className={styles.formula}>ΔT_Ziel = ΔT_Mess · (I_Ziel / I_Mess)^(1 / 0,61)</div>
 
       <div className={styles.resultBox} aria-live="polite">
         {!result && <span className={styles.resultHint}>Gemessene Temperatur eingeben – das Ergebnis erscheint sofort.</span>}
@@ -176,6 +192,7 @@ function TemperatureAtCurrentCalculator() {
               ΔT: {formatNumber(result.deltaMeasured)} K → {formatNumber(result.deltaTarget)} K
               {result.margin !== null && <> · Reserve zum Grenzwert: <span className={result.margin >= 0 ? styles.ok : styles.over}>{formatNumber(result.margin)} K</span></>}
             </span>
+            <span className={styles.warningSoft}>Näherungswert aus der umgestellten IEC-Kennlinie; kein eigenständiger normativer Nachweis.</span>
           </>
         )}
       </div>
@@ -200,10 +217,10 @@ export default function ToolsPage(): ReactNode {
           </header>
 
           <div className={styles.notice}>
-            <strong>Grundlage:</strong> IEC 61439-1:2020, Abschnitt 9.2 (insbesondere 9.2.2). Die Erwärmung ΔT ist
-            die Differenz zwischen Messstellentemperatur und Umgebungstemperatur. Die Umrechnung setzt voraus,
-            dass die Verlustleistung der betrachteten Leiter/Geräte im Wesentlichen proportional zu I² ist. Der
-            nach oben berechnete Strom darf außerdem keine Bemessungsgrenze eines beteiligten Geräts überschreiten.
+            <strong>Grundlage für Rechner 1:</strong> IEC 61439-1:2020, 10.10.2.3.1. Für die Korrektur eines
+            Prüfergebnisses wird die empirische Beziehung mit dem Exponenten 0,61 verwendet. Die gemessene
+            Erwärmung darf dabei höchstens ±5 K von der maximal zulässigen Erwärmung abweichen. ΔT ist die
+            Temperaturerhöhung der Messstelle gegenüber der Umgebung.
           </div>
 
           <div className={styles.grid}>
@@ -214,14 +231,16 @@ export default function ToolsPage(): ReactNode {
           <section className={styles.explanation}>
             <Heading as="h2">So wird gerechnet</Heading>
             <p>
-              Aus der IEC-Annahme <strong>ΔT ∝ Verlustleistung</strong> und für ohmsch dominierte Verluste
-              <strong> P ∝ I²</strong> ergibt sich <strong>ΔT ∝ I²</strong>. Deshalb wird immer mit der
-              Temperaturerhöhung gegenüber der Umgebung gerechnet – nicht mit der absoluten Temperatur allein.
+              Rechner 1 verwendet <strong>I_Grenz / I_Mess = (ΔT_Grenz / ΔT_Mess)^0,61</strong>. Rechner 2 stellt
+              dieselbe Beziehung nach der Erwärmung um: <strong>ΔT_Ziel = ΔT_Mess · (I_Ziel / I_Mess)^(1/0,61)</strong>.
+              Aus der berechneten Erwärmung wird mit der eingegebenen Umgebungstemperatur wieder die absolute
+              Temperatur bestimmt.
             </p>
             <p className={styles.smallPrint}>
-              Der zweite Rechner ist die mathematische Umkehrung derselben Beziehung und dient als Näherung für
-              vergleichbare Betriebsbedingungen. Änderungen an Kühlung, Kontaktwiderständen, Material, Einbau,
-              Frequenz oder Verlustmechanismen können die reale Temperatur verändern.
+              Die Umrechnung ist für vergleichbare Betriebs- und Kühlbedingungen gedacht. Geräte mit wesentlich
+              festen oder linear vom Strom abhängigen Verlusten sowie Änderungen an Kühlung, Kontaktwiderständen,
+              Material, Einbau oder Frequenz können das reale Verhalten verändern. Ein berechneter Strom darf
+              außerdem keine Bemessungsgrenze eines beteiligten Geräts überschreiten.
             </p>
           </section>
         </div>

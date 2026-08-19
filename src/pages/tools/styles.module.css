@@ -150,15 +150,16 @@
   background: var(--wiki-muted-surface);
   text-align: center;
   font-family: var(--ifm-font-family-monospace);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .resultBox {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 132px;
+  min-height: 145px;
   margin-top: 1rem;
   padding: 1rem 1.05rem;
   border: 1px solid color-mix(in srgb, var(--ifm-color-primary) 20%, var(--wiki-border));
@@ -200,13 +201,43 @@
   font-weight: 700;
 }
 
+.okNote,
+.warning,
+.warningSoft {
+  display: block;
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--wiki-border);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.okNote {
+  color: #188038;
+  font-weight: 700;
+}
+
+.warning {
+  color: #b06000;
+  font-weight: 700;
+}
+
+.warningSoft {
+  color: var(--ifm-color-content-secondary);
+}
+
 [data-theme='dark'] .error,
 [data-theme='dark'] .over {
   color: #f28b82;
 }
 
-[data-theme='dark'] .ok {
+[data-theme='dark'] .ok,
+[data-theme='dark'] .okNote {
   color: #81c995;
+}
+
+[data-theme='dark'] .warning {
+  color: #fdd663;
 }
 
 .explanation {
@@ -253,6 +284,6 @@
   }
 
   .resultBox {
-    min-height: 118px;
+    min-height: 128px;
   }
 }
