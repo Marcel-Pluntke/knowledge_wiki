@@ -37,7 +37,7 @@ export function FootballMotionEnhancer() {
       const wantedCategory = difficulty === 'hard' ? 'Ungleichnamige' : 'Gleichnamige';
       let question = originalNext(args);
 
-      for (let attempt = 0; attempt < 60 && !question.category.startsWith(wantedCategory); attempt += 1) {
+      for (let attempt = 0; attempt < 60 && !(question.category ?? '').startsWith(wantedCategory); attempt += 1) {
         question = originalNext(args);
       }
 
