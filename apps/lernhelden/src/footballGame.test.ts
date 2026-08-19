@@ -1,5 +1,12 @@
 import {describe, expect, it} from 'vitest';
-import {footballBallLeft, footballPlayType, resolveFootballPlay, splitFractionExpression} from './footballGame';
+import {
+  footballBallLeft,
+  footballPlayType,
+  nextFootballMomentum,
+  resolveFootballAction,
+  resolveFootballPlay,
+  splitFractionExpression,
+} from './footballGame';
 
 describe('football match logic', () => {
   it('rewards choosing the free lane after a correct answer', () => {
@@ -16,17 +23,15 @@ describe('football match logic', () => {
     expect(resolveFootballPlay(0, true, 'upper', 'upper').ballPosition).toBe(1);
   });
 
-  it('turns the attacking third into a shot choice', () => {
+  it('turns the attacking third and special situations into shots', () => {
     expect(footballPlayType(2)).toBe('shot');
-    expect(resolveFootballPlay(2, true, 'upper', 'lower').outcome).toBe('goal');
+    expect(footballPlayType(1, 'big-chance')).toBe('shot');
+    expect(footballPlayType(0, 'free-kick')).toBe('shot');
   });
 
-  it('lets a correctly diving keeper save some shots', () => {
-    expect(resolveFootballPlay(2, true, 'upper', 'upper', () => 0.2)).toMatchObject({ballPosition: 1, outcome: 'saved'});
-  });
-
-  it('still allows a well-placed shot to score when the keeper guesses the corner', () => {
-    expect(resolveFootballPlay(2, true, 'upper', 'upper', () => 0.9)).toMatchObject({ballPosition: 0, playerGoal: true, outcome: 'goal'});
+  it('keeps a normal guessed shot saveable but makes one-on-one chances stronger', () => {
+    expect(resolveFootballAction(2, true, 'pass', 'upper', 'upper', 0, 'normal', () => 0.3).outcome).toBe('saved');
+    expect(resolveFootballAction(1, true, 'pass', 'upper', 'upper', 4, 'one-on-one', () => 0.3).outcome).toBe('goal');
   });
 
   it('scores for the opponent after enough wrong answers', () => {
@@ -40,6 +45,60 @@ describe('football match logic', () => {
   it('keeps the ball marker inside the pitch', () => {
     expect(footballBallLeft(-10)).toBe(16);
     expect(footballBallLeft(10)).toBe(84);
+  });
+});
+
+describe('football action gameplay', () => {
+  it('builds momentum on correct answers and resets it on mistakes', () => {
+    expect(nextFootballMomentum(0, true)).toBe(1);
+    expect(nextFootballMomentum(4, true)).toBe(5);
+    expect(nextFootballMomentum(5, true)).toBe(5);
+    expect(nextFootballMomentum(4, false)).toBe(0);
+  });
+
+  it('makes a pass the safe one-zone option', () => {
+    expect(resolveFootballAction(0, true, 'pass', 'upper', 'upper', 0, 'normal', () => 0.99)).toMatchObject({
+      ballPosition: 1,
+      outcome: 'pass-complete',
+      momentum: 1,
+      nextSituation: 'normal',
+    });
+  });
+
+  it('lets a successful through ball create an immediate shot', () => {
+    expect(resolveFootballAction(0, true, 'through-ball', 'upper', 'lower', 0, 'normal', () => 0.99)).toMatchObject({
+      ballPosition: 2,
+      outcome: 'through-ball',
+    });
+  });
+
+  it('turns a three-answer streak into a big chance', () => {
+    expect(resolveFootballAction(0, true, 'pass', 'upper', 'upper', 2, 'normal', () => 0.99)).toMatchObject({
+      ballPosition: 1,
+      momentum: 3,
+      nextSituation: 'big-chance',
+    });
+  });
+
+  it('turns a four-answer streak into a one-on-one', () => {
+    expect(resolveFootballAction(0, true, 'pass', 'lower', 'upper', 3, 'normal', () => 0.99)).toMatchObject({
+      momentum: 4,
+      nextSituation: 'one-on-one',
+    });
+  });
+
+  it('can award a free kick when a correct dribble is stopped', () => {
+    expect(resolveFootballAction(0, true, 'dribble', 'upper', 'upper', 0, 'normal', () => 0.1)).toMatchObject({
+      nextSituation: 'free-kick',
+    });
+  });
+
+  it('punishes a wrong through ball more strongly', () => {
+    expect(resolveFootballAction(0, false, 'through-ball', 'upper', 'lower', 2)).toMatchObject({
+      ballPosition: -2,
+      momentum: 0,
+      nextSituation: 'counter',
+    });
   });
 });
 
