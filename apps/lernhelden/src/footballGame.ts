@@ -1,4 +1,5 @@
 export const FOOTBALL_MATCH_QUESTIONS = 10;
+export const FOOTBALL_KEEPER_SAVE_CHANCE = 0.3;
 
 export type FootballDirection = 'upper' | 'lower';
 export type FootballPlayType = 'dribble' | 'shot';
@@ -18,6 +19,19 @@ export type FractionExpressionPart =
 
 export function footballPlayType(ballPosition: number): FootballPlayType {
   return ballPosition >= 2 ? 'shot' : 'dribble';
+}
+
+export function chooseOpponentDirection(
+  playType: FootballPlayType,
+  playerDirection: FootballDirection,
+  random: () => number,
+): FootballDirection {
+  if (playType === 'shot') {
+    const keeperReadsShot = random() < FOOTBALL_KEEPER_SAVE_CHANCE;
+    if (keeperReadsShot) return playerDirection;
+    return playerDirection === 'upper' ? 'lower' : 'upper';
+  }
+  return random() < .5 ? 'upper' : 'lower';
 }
 
 export function resolveFootballPlay(
