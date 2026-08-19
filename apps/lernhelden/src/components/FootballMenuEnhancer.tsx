@@ -10,6 +10,11 @@ const footballMenuMarkup = `
 
 export function FootballMenuEnhancer() {
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (!location.hash && params.get('mode') === 'football') {
+      location.hash = '/football';
+    }
+
     const sync = () => {
       const sheet = document.querySelector<HTMLElement>('.nav-sheet');
       if (!sheet || sheet.querySelector('[data-football-menu]')) return;
