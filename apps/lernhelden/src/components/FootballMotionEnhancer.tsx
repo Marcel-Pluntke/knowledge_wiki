@@ -8,9 +8,16 @@ export function FootballMotionEnhancer() {
   useEffect(() => {
     let lastFeedback = '';
     let playbackTimer = 0;
-    let returnTimer = 0;
+    let advanceTimer = 0;
+    let scrollTimer = 0;
+
+    const clearWholePlaceholder = () => {
+      document.querySelector<HTMLInputElement>('input[aria-label="Ganze Zahl"]')?.removeAttribute('placeholder');
+    };
 
     const runPlayback = () => {
+      clearWholePlaceholder();
+
       const feedback = document.querySelector<HTMLElement>('.football-feedback');
       if (!feedback) {
         lastFeedback = '';
@@ -22,13 +29,16 @@ export function FootballMotionEnhancer() {
       lastFeedback = text;
 
       const pitch = document.querySelector<HTMLElement>('.football-pitch');
-      if (!pitch) return;
+      const form = document.querySelector<HTMLFormElement>('.football-question-card .football-answer');
+      const submitButton = form?.querySelector<HTMLButtonElement>('.football-primary') ?? null;
+      if (!pitch || !form) return;
 
       const active = document.activeElement;
       if (active instanceof HTMLElement) active.blur();
 
       window.clearTimeout(playbackTimer);
-      window.clearTimeout(returnTimer);
+      window.clearTimeout(advanceTimer);
+      window.clearTimeout(scrollTimer);
 
       pitch.classList.remove('football-playback');
       void pitch.offsetWidth;
@@ -36,7 +46,14 @@ export function FootballMotionEnhancer() {
 
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const isShot = pitch.classList.contains('play-shot');
-      const playbackMs = isShot ? SHOT_PLAYBACK_MS : DRIBBLE_PLAYBACK_MS;
+      const playbackMs = reduceMotion ? 300 : isShot ? SHOT_PLAYBACK_MS : DRIBBLE_PLAYBACK_MS;
+      const finalAction = submitButton?.textContent?.includes('Ergebnis') ?? false;
+
+      if (submitButton) {
+        submitButton.textContent = finalAction ? 'Ergebnis folgt …' : 'Nächste Aufgabe …';
+        submitButton.disabled = true;
+        submitButton.classList.add('football-auto-advance');
+      }
 
       window.requestAnimationFrame(() => {
         pitch.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block: 'center'});
@@ -44,22 +61,30 @@ export function FootballMotionEnhancer() {
 
       playbackTimer = window.setTimeout(() => {
         pitch.classList.remove('football-playback');
-      }, reduceMotion ? 250 : playbackMs);
+      }, playbackMs);
 
-      returnTimer = window.setTimeout(() => {
-        const questionCard = document.querySelector<HTMLElement>('.football-question-card');
-        if (!questionCard || !document.querySelector('.football-shell')) return;
-        questionCard.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block: 'start'});
-      }, reduceMotion ? 450 : playbackMs + 300);
+      advanceTimer = window.setTimeout(() => {
+        if (!document.querySelector('.football-shell')) return;
+        form.requestSubmit();
+
+        scrollTimer = window.setTimeout(() => {
+          if (!document.querySelector('.football-shell')) return;
+          const target = document.querySelector<HTMLElement>('.football-question-card')
+            ?? document.querySelector<HTMLElement>('.football-result-card');
+          target?.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block: 'start'});
+        }, reduceMotion ? 40 : 120);
+      }, playbackMs + (reduceMotion ? 40 : 180));
     };
 
     const observer = new MutationObserver(runPlayback);
     observer.observe(document.body, {childList: true, subtree: true, characterData: true});
+    clearWholePlaceholder();
 
     return () => {
       observer.disconnect();
       window.clearTimeout(playbackTimer);
-      window.clearTimeout(returnTimer);
+      window.clearTimeout(advanceTimer);
+      window.clearTimeout(scrollTimer);
     };
   }, []);
 
