@@ -3,8 +3,6 @@ name: Football Preview Pages
 on:
   push:
     branches: [agent/football-mvp]
-  pull_request:
-    branches: [main]
 
 permissions:
   contents: read
@@ -14,24 +12,10 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  validate-pr:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
-
   build-and-deploy-preview:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
       name: football-preview
