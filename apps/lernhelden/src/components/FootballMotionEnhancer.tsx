@@ -1,9 +1,24 @@
 import {useEffect} from 'react';
+import {fractionsAdventure} from '../adventures/fractions';
 import './footballMotion.css';
 import './footballGoalBanner.css';
+import './footballDifficulty.css';
 
 const DRIBBLE_PLAYBACK_MS = 1500;
 const SHOT_PLAYBACK_MS = 2450;
+const DIFFICULTY_KEY_PREFIX = 'lernhelden:football:difficulty:';
+
+type FootballArithmeticMode = 'add' | 'sub';
+type FootballDifficulty = 'easy' | 'hard';
+
+const difficultyKey = (mode: FootballArithmeticMode) => `${DIFFICULTY_KEY_PREFIX}${mode}`;
+
+const readDifficulty = (mode: FootballArithmeticMode): FootballDifficulty =>
+  localStorage.getItem(difficultyKey(mode)) === 'hard' ? 'hard' : 'easy';
+
+const writeDifficulty = (mode: FootballArithmeticMode, difficulty: FootballDifficulty) => {
+  localStorage.setItem(difficultyKey(mode), difficulty);
+};
 
 export function FootballMotionEnhancer() {
   useEffect(() => {
@@ -12,8 +27,103 @@ export function FootballMotionEnhancer() {
     let advanceTimer = 0;
     let scrollTimer = 0;
 
+    const originalNext = fractionsAdventure.questionProvider.next;
+    const footballNext: typeof originalNext = args => {
+      const isFootball = location.hash.replace(/^#/, '').startsWith('/football');
+      const mode = args.modeId === 'add' || args.modeId === 'sub' ? args.modeId as FootballArithmeticMode : null;
+      if (!isFootball || !mode) return originalNext(args);
+
+      const difficulty = readDifficulty(mode);
+      const wantedCategory = difficulty === 'hard' ? 'Ungleichnamige' : 'Gleichnamige';
+      let question = originalNext(args);
+
+      for (let attempt = 0; attempt < 60 && !question.category.startsWith(wantedCategory); attempt += 1) {
+        question = originalNext(args);
+      }
+
+      return question;
+    };
+    fractionsAdventure.questionProvider.next = footballNext;
+
     const clearWholePlaceholder = () => {
       document.querySelector<HTMLInputElement>('input[aria-label="Ganze Zahl"]')?.removeAttribute('placeholder');
+    };
+
+    const updateModeCardDescriptions = () => {
+      const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('.football-mode-grid > button'));
+      const update = (title: string, mode: FootballArithmeticMode, operation: string) => {
+        const button = buttons.find(candidate => candidate.querySelector('strong')?.textContent?.trim() === title);
+        const description = button?.querySelector('span');
+        if (!description) return;
+        const difficulty = readDifficulty(mode);
+        description.textContent = difficulty === 'hard'
+          ? `${operation} · Schwer · unterschiedliche Nenner`
+          : `${operation} · Leicht · gleiche Nenner`;
+      };
+      update('Passspiel', 'add', 'Brüche addieren');
+      update('Ballgewinn', 'sub', 'Brüche subtrahieren');
+    };
+
+    const syncDifficultyControls = () => {
+      const grid = document.querySelector<HTMLElement>('.football-mode-grid');
+      if (!grid) return;
+
+      const existing = document.querySelector<HTMLElement>('.football-difficulty-panel');
+      if (existing) {
+        updateModeCardDescriptions();
+        return;
+      }
+
+      const panel = document.createElement('section');
+      panel.className = 'football-difficulty-panel';
+      panel.setAttribute('aria-label', 'Schwierigkeit für Addition und Subtraktion');
+
+      const intro = document.createElement('div');
+      intro.className = 'football-difficulty-intro';
+      intro.innerHTML = '<small>Schwierigkeit</small><strong>Nenner wählen</strong><span>Leicht = gleich · Schwer = unterschiedlich</span>';
+      panel.appendChild(intro);
+
+      const rows = document.createElement('div');
+      rows.className = 'football-difficulty-rows';
+
+      const addRow = (mode: FootballArithmeticMode, title: string) => {
+        const row = document.createElement('div');
+        row.className = 'football-difficulty-row';
+
+        const label = document.createElement('strong');
+        label.textContent = title;
+        row.appendChild(label);
+
+        const choices = document.createElement('div');
+        choices.className = 'football-difficulty-choices';
+
+        (['easy', 'hard'] as FootballDifficulty[]).forEach(difficulty => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.dataset.mode = mode;
+          button.dataset.difficulty = difficulty;
+          button.textContent = difficulty === 'easy' ? 'Leicht' : 'Schwer';
+          button.classList.toggle('selected', readDifficulty(mode) === difficulty);
+          button.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            writeDifficulty(mode, difficulty);
+            choices.querySelectorAll('button').forEach(choice => choice.classList.remove('selected'));
+            button.classList.add('selected');
+            updateModeCardDescriptions();
+          });
+          choices.appendChild(button);
+        });
+
+        row.appendChild(choices);
+        rows.appendChild(row);
+      };
+
+      addRow('add', 'Addition');
+      addRow('sub', 'Subtraktion');
+      panel.appendChild(rows);
+      grid.parentElement?.insertBefore(panel, grid);
+      updateModeCardDescriptions();
     };
 
     const removeGoalScene = () => {
@@ -108,13 +218,22 @@ export function FootballMotionEnhancer() {
       }, playbackMs + (reduceMotion ? 40 : 180));
     };
 
-    const observer = new MutationObserver(runPlayback);
+    const sync = () => {
+      clearWholePlaceholder();
+      syncDifficultyControls();
+      runPlayback();
+    };
+
+    const observer = new MutationObserver(sync);
     observer.observe(document.body, {childList: true, subtree: true, characterData: true});
-    clearWholePlaceholder();
+    sync();
 
     return () => {
       observer.disconnect();
       removeGoalScene();
+      if (fractionsAdventure.questionProvider.next === footballNext) {
+        fractionsAdventure.questionProvider.next = originalNext;
+      }
       window.clearTimeout(playbackTimer);
       window.clearTimeout(advanceTimer);
       window.clearTimeout(scrollTimer);
