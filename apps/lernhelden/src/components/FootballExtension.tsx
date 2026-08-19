@@ -1,9 +1,19 @@
 import {useEffect, useMemo, useState} from 'react';
+import type {FormEvent} from 'react';
 import {createPortal} from 'react-dom';
 import type {Question} from '@lernhelden/engine';
 import {fractionsAdventure} from '../adventures/fractions';
-import {FOOTBALL_MATCH_QUESTIONS, footballBallLeft, resolveFootballTurn} from '../footballGame';
+import {
+  FOOTBALL_MATCH_QUESTIONS,
+  footballBallLeft,
+  footballPlayType,
+  resolveFootballPlay,
+  splitFractionExpression,
+  type FootballDirection,
+  type FootballPlayType,
+} from '../footballGame';
 import './football.css';
+import './footballV2.css';
 
 type MatchPhase = 'select' | 'playing' | 'finished';
 
@@ -44,6 +54,34 @@ function readRecord(): FootballRecord {
   }
 }
 
+function SchoolFractionExpression({text}: {text: string}) {
+  const parts = splitFractionExpression(text);
+  return <span className="school-expression" aria-label={text}>
+    <span aria-hidden="true">
+      {parts.map((part, index) => part.kind === 'text'
+        ? <span className="school-expression-text" key={`${part.text}-${index}`}>{part.text}</span>
+        : <span className="school-mixed-fraction" key={`${part.numerator}-${part.denominator}-${index}`}>
+            {part.whole && <span className="school-whole">{part.whole}</span>}
+            <span className="school-fraction">
+              <span>{part.numerator}</span>
+              <span className="school-fraction-line"/>
+              <span>{part.denominator}</span>
+            </span>
+          </span>)}
+    </span>
+  </span>;
+}
+
+function playerDirectionLabel(direction: FootballDirection, playType: FootballPlayType) {
+  if (playType === 'shot') return direction === 'upper' ? 'linke Ecke' : 'rechte Ecke';
+  return direction === 'upper' ? 'oben' : 'unten';
+}
+
+function opponentDirectionLabel(direction: FootballDirection, playType: FootballPlayType) {
+  if (playType === 'shot') return direction === 'upper' ? 'links' : 'rechts';
+  return direction === 'upper' ? 'oben' : 'unten';
+}
+
 export function FootballExtension() {
   const [route, setRoute] = useState(routeFromHash);
   const [grid, setGrid] = useState<HTMLElement | null>(null);
@@ -78,7 +116,7 @@ function FootballCard() {
     </div>
     <span className="status">MVP</span>
     <h2>Mathe Fußball</h2>
-    <p>Brüche lösen, den Ball nach vorn spielen und Tore schießen.</p>
+    <p>Brüche lösen, die Abwehr ausspielen und Tore schießen.</p>
     <button onClick={() => go('/football')}>Match starten <span aria-hidden="true">›</span></button>
   </article>;
 }
@@ -95,12 +133,17 @@ function FootballGame() {
   const [playerGoals, setPlayerGoals] = useState(0);
   const [opponentGoals, setOpponentGoals] = useState(0);
   const [ballPosition, setBallPosition] = useState(0);
+  const [playerDirection, setPlayerDirection] = useState<FootballDirection | null>(null);
+  const [opponentDirection, setOpponentDirection] = useState<FootballDirection | null>(null);
+  const [lastPlayType, setLastPlayType] = useState<FootballPlayType | null>(null);
   const [feedback, setFeedback] = useState('');
   const [turnLocked, setTurnLocked] = useState(false);
   const [record, setRecord] = useState<FootballRecord>(readRecord);
 
   const activeMode = useMemo(() => footballModes.find(mode => mode.id === modeId) ?? footballModes[0], [modeId]);
   const progress = Math.round((answered / FOOTBALL_MATCH_QUESTIONS) * 100);
+  const currentPlayType = footballPlayType(ballPosition);
+  const displayPlayType = turnLocked && lastPlayType ? lastPlayType : currentPlayType;
 
   const makeQuestion = (nextSequence: number, selectedMode = modeId) => fractionsAdventure.questionProvider.next({
     modeId: selectedMode,
@@ -112,6 +155,9 @@ function FootballGame() {
   const resetAnswer = () => {
     setNumerator('');
     setDenominator('');
+    setPlayerDirection(null);
+    setOpponentDirection(null);
+    setLastPlayType(null);
     setFeedback('');
     setTurnLocked(false);
   };
@@ -144,29 +190,38 @@ function FootballGame() {
   };
 
   const submit = () => {
-    if (!question || turnLocked || !numerator.trim() || !denominator.trim()) return;
+    if (!question || turnLocked || !playerDirection || !numerator.trim() || !denominator.trim()) return;
     const answer = `${numerator.trim()}/${denominator.trim()}`;
     const correct = fractionsAdventure.questionProvider.evaluate(question, answer);
-    const turn = resolveFootballTurn(ballPosition, correct);
+    const defendingDirection: FootballDirection = Math.random() < .5 ? 'upper' : 'lower';
+    const play = resolveFootballPlay(ballPosition, correct, playerDirection, defendingDirection);
     const nextAnswered = answered + 1;
 
     setAnswered(nextAnswered);
-    setBallPosition(turn.ballPosition);
+    setBallPosition(play.ballPosition);
+    setOpponentDirection(defendingDirection);
+    setLastPlayType(play.playType);
     setTurnLocked(true);
 
-    if (correct) {
-      setCorrectAnswers(value => value + 1);
-      if (turn.playerGoal) {
-        setPlayerGoals(value => value + 1);
-        setFeedback('Tor! Drei starke Aktionen bringen dein Team in Führung.');
-      } else {
-        setFeedback('Richtig! Dein Team spielt den Ball weiter nach vorn.');
-      }
-    } else if (turn.opponentGoal) {
-      setOpponentGoals(value => value + 1);
-      setFeedback(`Noch nicht. Richtig wäre ${question.answer}. Der Gegner nutzt die Chance und trifft.`);
+    if (correct) setCorrectAnswers(value => value + 1);
+    if (play.playerGoal) setPlayerGoals(value => value + 1);
+    if (play.opponentGoal) setOpponentGoals(value => value + 1);
+
+    if (!correct) {
+      setFeedback(play.opponentGoal
+        ? `Noch nicht. Richtig wäre ${question.answer}. Der Gegner kontert und trifft.`
+        : `Noch nicht. Richtig wäre ${question.answer}. Der Gegner gewinnt den Ball.`);
+      return;
+    }
+
+    if (play.outcome === 'goal') {
+      setFeedback(`Tor! Der Torwart springt ${opponentDirectionLabel(defendingDirection, 'shot')}, dein Schuss geht in die ${playerDirectionLabel(playerDirection, 'shot')}.`);
+    } else if (play.outcome === 'saved') {
+      setFeedback(`Richtig gerechnet, aber der Torwart ahnt die ${playerDirectionLabel(playerDirection, 'shot')} und hält. Der Abpraller bleibt bei dir.`);
+    } else if (play.outcome === 'breakthrough') {
+      setFeedback(`Richtig! Du gehst ${playerDirectionLabel(playerDirection, 'dribble')}, die Abwehr zieht ${opponentDirectionLabel(defendingDirection, 'dribble')}. Ausgespielt!`);
     } else {
-      setFeedback(`Noch nicht. Richtig wäre ${question.answer}. Der Gegner gewinnt Raum.`);
+      setFeedback(`Richtig! Die Abwehr liest deine Richtung, aber du behauptest den Ball und kommst weiter.`);
     }
   };
 
@@ -181,11 +236,14 @@ function FootballGame() {
     resetAnswer();
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (turnLocked) nextTurn();
     else submit();
   };
+
+  const actorDirectionClass = turnLocked && opponentDirection ? ` ${opponentDirection}` : '';
+  const ballDirectionClass = playerDirection ? ` choice-${playerDirection}` : '';
 
   return <div className="football-shell" role="dialog" aria-label="Mathe Fußball">
     <header className="football-topbar">
@@ -197,18 +255,18 @@ function FootballGame() {
     {phase === 'select' && <main className="football-start">
       <section className="football-hero-panel">
         <p className="football-kicker">Brüche-Liga</p>
-        <h1>Rechnen. Angreifen. Tore schießen.</h1>
-        <p>Jede richtige Lösung bringt den Ball Richtung gegnerisches Tor. Fehler geben dem Gegner Raum. Nach {FOOTBALL_MATCH_QUESTIONS} Aufgaben steht das Ergebnis fest.</p>
+        <h1>Rechnen. Ausspielen. Tore schießen.</h1>
+        <p>Wähle einen Modus und das Match startet sofort. Löse die Aufgabe und entscheide zusätzlich, wie du an der Abwehr vorbeigehst oder in welche Ecke du schießt.</p>
         <div className="football-mini-pitch" aria-hidden="true"><span className="football-ball"/></div>
       </section>
       <section className="football-mode-panel">
-        <div className="football-section-heading"><div><small>Trainingsart</small><h2>Wähle dein Match</h2></div><span>10 Aufgaben</span></div>
+        <div className="football-section-heading"><div><small>Trainingsart</small><h2>Wähle dein Match</h2></div><span>Startet sofort</span></div>
+        <p className="football-mode-tip">Einmal tippen – direkt geht es auf den Platz.</p>
         <div className="football-mode-grid">
-          {footballModes.map(mode => <button key={mode.id} className={modeId === mode.id ? 'selected' : ''} onClick={() => setModeId(mode.id)}>
+          {footballModes.map(mode => <button key={mode.id} onClick={() => startMatch(mode.id)}>
             <strong>{mode.title}</strong><span>{mode.description}</span>
           </button>)}
         </div>
-        <button className="football-primary" onClick={() => startMatch()}>Match anpfeifen</button>
       </section>
     </main>}
 
@@ -219,29 +277,51 @@ function FootballGame() {
         <div><small>GEGNER</small><strong>{opponentGoals}</strong></div>
       </section>
 
-      <section className="football-pitch" aria-label="Spielfeld mit aktueller Ballposition">
+      <section className={`football-pitch play-${displayPlayType}`} aria-label="Spielfeld mit aktueller Ballposition">
         <div className="football-goal left" aria-hidden="true"/>
         <div className="football-goal right" aria-hidden="true"/>
         <div className="football-halfway" aria-hidden="true"/>
         <div className="football-center-circle" aria-hidden="true"/>
-        <span className="football-ball match-ball" style={{left: `${footballBallLeft(ballPosition)}%`}} aria-label="Ballposition"/>
+        {displayPlayType === 'shot'
+          ? <div className={`football-pitch-actor football-keeper${actorDirectionClass}`} aria-hidden="true"><span>TW</span></div>
+          : <div className={`football-pitch-actor football-defender${actorDirectionClass}`} aria-hidden="true"><span>ABW</span></div>}
+        <span className={`football-ball match-ball${ballDirectionClass}`} style={{left: `${footballBallLeft(ballPosition)}%`}} aria-label="Ballposition"/>
       </section>
 
       <div className="football-progress" aria-label={`${progress} Prozent des Matches gespielt`}><span style={{width: `${progress}%`}}/></div>
 
       <section className="football-question-card">
         <div className="football-question-meta"><span>{question.category}</span><strong>Aktion {answered + (turnLocked ? 0 : 1)} von {FOOTBALL_MATCH_QUESTIONS}</strong></div>
-        <div className="football-question">{question.prompt}</div>
+        <div className="football-question"><SchoolFractionExpression text={question.prompt}/></div>
+
+        <div className={`football-tactic ${displayPlayType}`}>
+          <div className="football-tactic-copy">
+            <small>{displayPlayType === 'shot' ? 'Torchance' : 'Dein Spielzug'}</small>
+            <strong>{displayPlayType === 'shot' ? 'In welche Ecke schießt du?' : 'Wo gehst du an der Abwehr vorbei?'}</strong>
+          </div>
+          <div className="football-tactic-grid">
+            <button type="button" disabled={turnLocked} className={playerDirection === 'upper' ? 'selected' : ''} onClick={() => setPlayerDirection('upper')}>
+              <span className="football-direction-mark">{displayPlayType === 'shot' ? 'L' : '↑'}</span>
+              <span><strong>{displayPlayType === 'shot' ? 'Linke Ecke' : 'Oben vorbei'}</strong><small>{displayPlayType === 'shot' ? 'Schuss platzieren' : 'Dribbling wählen'}</small></span>
+            </button>
+            <button type="button" disabled={turnLocked} className={playerDirection === 'lower' ? 'selected' : ''} onClick={() => setPlayerDirection('lower')}>
+              <span className="football-direction-mark">{displayPlayType === 'shot' ? 'R' : '↓'}</span>
+              <span><strong>{displayPlayType === 'shot' ? 'Rechte Ecke' : 'Unten vorbei'}</strong><small>{displayPlayType === 'shot' ? 'Schuss platzieren' : 'Dribbling wählen'}</small></span>
+            </button>
+          </div>
+        </div>
+
         <form className="football-answer" onSubmit={handleSubmit}>
           <div className="football-fraction-input">
             <input aria-label="Zähler" inputMode="numeric" pattern="-?[0-9]*" value={numerator} onChange={event => setNumerator(event.target.value)} disabled={turnLocked}/>
             <span/>
             <input aria-label="Nenner" inputMode="numeric" pattern="-?[0-9]*" value={denominator} onChange={event => setDenominator(event.target.value)} disabled={turnLocked}/>
           </div>
-          <button className="football-primary" disabled={!turnLocked && (!numerator.trim() || !denominator.trim())} type="submit">
-            {turnLocked ? answered >= FOOTBALL_MATCH_QUESTIONS ? 'Ergebnis anzeigen' : 'Nächste Aktion' : 'Antwort prüfen'}
+          <button className="football-primary" disabled={!turnLocked && (!playerDirection || !numerator.trim() || !denominator.trim())} type="submit">
+            {turnLocked ? answered >= FOOTBALL_MATCH_QUESTIONS ? 'Ergebnis anzeigen' : 'Nächste Aktion' : 'Spielzug ausführen'}
           </button>
         </form>
+        {!turnLocked && !playerDirection && <p className="football-action-hint">Wähle zuerst deinen Laufweg oder deine Schussecke.</p>}
         {feedback && <p className={`football-feedback${feedback.startsWith('Richtig') || feedback.startsWith('Tor') ? ' correct' : ''}`} role="status">{feedback}</p>}
       </section>
     </main>}
