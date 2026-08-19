@@ -19,7 +19,14 @@ describe('football match logic', () => {
   it('turns the attacking third into a shot choice', () => {
     expect(footballPlayType(2)).toBe('shot');
     expect(resolveFootballPlay(2, true, 'upper', 'lower').outcome).toBe('goal');
-    expect(resolveFootballPlay(2, true, 'upper', 'upper')).toMatchObject({ballPosition: 1, outcome: 'saved'});
+  });
+
+  it('lets a correctly diving keeper save some shots', () => {
+    expect(resolveFootballPlay(2, true, 'upper', 'upper', () => 0.2)).toMatchObject({ballPosition: 1, outcome: 'saved'});
+  });
+
+  it('still allows a well-placed shot to score when the keeper guesses the corner', () => {
+    expect(resolveFootballPlay(2, true, 'upper', 'upper', () => 0.9)).toMatchObject({ballPosition: 0, playerGoal: true, outcome: 'goal'});
   });
 
   it('scores for the opponent after enough wrong answers', () => {
