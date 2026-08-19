@@ -76,6 +76,7 @@ const config: Config = {
           position: 'left',
           label: 'Topics',
         },
+        {to: '/tools', label: 'Tools', position: 'left'},
         {to: '/blog', label: 'Blog', position: 'left'},
         {to: '/lernhelden', label: 'Lernhelden', position: 'left'},
         {
@@ -98,8 +99,9 @@ const config: Config = {
           ],
         },
         {
-          title: 'Write',
+          title: 'Tools & Write',
           items: [
+            {label: 'IEC 61439 Erwärmungs-Umrechner', to: '/tools'},
             {label: 'Blog', to: '/blog'},
           ],
         },
