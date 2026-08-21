@@ -3,7 +3,9 @@ import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {createAdventureSave,createProfile} from '@lernhelden/engine';
 import type {AdventureDefinition} from '@lernhelden/engine';
 import {fractionsAdventure} from './adventures/fractions';
-import {AdventureHome,Battle,Campaign,World} from './App';
+import {vocabularyAdventure} from './adventures/vocabulary';
+import {curriculumModeIds} from './adventures/vocabulary-curriculum';
+import {AdventureHome,Battle,Campaign,CurriculumChapterScreen,CurriculumGradeScreen,World} from './App';
 import {worldScenes} from './worldMap';
 
 const beginBattle=()=>fireEvent.click(screen.getByRole('button',{name:'Überspringen'}));
@@ -220,5 +222,48 @@ describe('Campaign',()=>{
     fireEvent.change(battleView.getByLabelText('Nenner'),{target:{value:'1'}});
     await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Antwort prüfen'}));await Promise.resolve()});
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({masteryByKey:expect.objectContaining({'Gleichnamige Brüche':expect.objectContaining({correct:1,box:2})})}));
+  });
+
+  it('navigates from the vocabulary grade selection to the grade-five basics chapter',()=>{
+    const save=createAdventureSave(vocabularyAdventure),profile=createProfile('Testheld');
+    const {unmount}=render(<AdventureHome adventure={vocabularyAdventure} save={save} profile={profile}/>);
+    expect(screen.getByRole('heading',{name:'Wähle deine Klasse'})).toBeVisible();
+    expect(screen.getByText('Weitere Klassen')).toBeVisible();
+    fireEvent.click(screen.getByRole('button',{name:/Klasse öffnen/}));
+    expect(location.hash).toBe('#/adventure/vocabulary/grade/grade-5');
+    unmount();
+    render(<CurriculumGradeScreen adventure={vocabularyAdventure} save={save} gradeId="grade-5"/>);
+    expect(screen.getByRole('heading',{name:'Grundlagen'})).toBeVisible();
+    fireEvent.click(screen.getByRole('button',{name:/Kapitel öffnen/}));
+    expect(location.hash).toBe('#/adventure/vocabulary/grade/grade-5/chapter/basics');
+  });
+
+  it('unlocks the mixed basics battle after the three required victories',()=>{
+    const save=createAdventureSave(vocabularyAdventure);
+    const {rerender}=render(<CurriculumChapterScreen adventure={vocabularyAdventure} save={save} gradeId="grade-5" chapterId="basics"/>);
+    const mixCard=screen.getByRole('heading',{name:'Gemischte Wiederholung'}).closest('article')!;
+    expect(within(mixCard).getByRole('button',{name:/Wortkampf starten/})).toBeDisabled();
+    const completed={...save,curriculum:{completedLessonIds:['spelling','numbers-1-50','teacher-says']}};
+    rerender(<CurriculumChapterScreen adventure={vocabularyAdventure} save={completed} gradeId="grade-5" chapterId="basics"/>);
+    const unlocked=screen.getByRole('heading',{name:'Gemischte Wiederholung'}).closest('article')!;
+    fireEvent.click(within(unlocked).getByRole('button',{name:/Wortkampf starten/}));
+    expect(JSON.parse(sessionStorage.getItem('lernhelden:curriculum:vocabulary')!)).toMatchObject({gradeId:'grade-5',chapterId:'basics',lessonId:'basics-mix',modeId:curriculumModeIds.mix});
+  });
+
+  it('records a curriculum victory and uses a text keyboard for written English',async()=>{
+    vi.spyOn(Math,'random').mockReturnValue(0);
+    const adventure={...vocabularyAdventure,enemies:vocabularyAdventure.enemies.map(enemy=>enemy.id==='curriculum-spelling-slime'?{...enemy,hp:1,attack:0}:enemy)} as AdventureDefinition;
+    const save=createAdventureSave(adventure),onSave=vi.fn().mockResolvedValue(undefined);
+    sessionStorage.setItem('lernhelden:mode:vocabulary',curriculumModeIds.spelling);
+    sessionStorage.setItem('lernhelden:curriculum:vocabulary',JSON.stringify({gradeId:'grade-5',chapterId:'basics',lessonId:'spelling',modeId:curriculumModeIds.spelling,enemyId:'curriculum-spelling-slime'}));
+    render(<Battle adventure={adventure} initialSave={save} profile={createProfile('Testheld')} onSave={onSave} onProfile={vi.fn().mockResolvedValue(undefined)}/>);
+    beginBattle();
+    fireEvent.click(screen.getByRole('button',{name:/Funkenangriff/}));
+    const input=screen.getByRole('textbox');
+    expect(input).toHaveAttribute('inputmode','text');
+    fireEvent.change(input,{target:{value:'school'}});
+    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Antwort prüfen'}));await Promise.resolve()});
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({curriculum:{completedLessonIds:['spelling']}}));
+    expect(screen.getByRole('button',{name:'Zurück zu den Übungen'})).toBeVisible();
   });
 });

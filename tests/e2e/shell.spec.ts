@@ -106,3 +106,21 @@ test('shows each original companion inside the battle scene',async({page},testIn
   }
   if(testInfo.project.name==='mobile')expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
+
+test('opens the grade-five vocabulary curriculum and starts a lesson battle',async({page})=>{
+  await page.goto('/#/adventure/vocabulary');
+  await expect(page.getByRole('heading',{name:'Wähle deine Klasse'})).toBeVisible();
+  await expect(page.getByText('Weitere Klassen')).toBeVisible();
+  await page.getByRole('button',{name:/Klasse öffnen/}).click();
+  await expect(page.getByRole('heading',{name:'Klasse 5'})).toBeVisible();
+  await page.getByRole('button',{name:/Kapitel öffnen/}).click();
+  await expect(page.getByRole('heading',{name:'Grundlagen'})).toBeVisible();
+  const mixed=page.getByRole('heading',{name:'Gemischte Wiederholung'}).locator('..').locator('..');
+  await expect(mixed.getByRole('button',{name:/Wortkampf starten/})).toBeDisabled();
+  const spelling=page.getByRole('heading',{name:'Buchstabieren'}).locator('..').locator('..');
+  await spelling.getByRole('button',{name:/Wortkampf starten/}).click();
+  await expect(page.getByRole('region',{name:'Kampf-Intro'})).toBeVisible();
+  await page.getByRole('button',{name:'Überspringen'}).click();
+  await page.getByRole('button',{name:/Funkenangriff/}).click();
+  await expect(page.getByRole('textbox')).toHaveAttribute('inputmode','text');
+});

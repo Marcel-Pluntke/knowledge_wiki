@@ -123,6 +123,43 @@ export interface CampaignProgress {
   claimedWeeklyKeys: string[];
 }
 
+export type CurriculumStatus = 'released' | 'coming-soon';
+
+export interface CurriculumLessonDefinition {
+  id: string;
+  title: string;
+  description: string;
+  modeId: string;
+  enemyId: string;
+  status: CurriculumStatus;
+  requiredLessonIds?: string[];
+}
+
+export interface CurriculumChapterDefinition {
+  id: string;
+  index: number;
+  title: string;
+  description: string;
+  status: CurriculumStatus;
+  lessons: CurriculumLessonDefinition[];
+}
+
+export interface CurriculumGradeDefinition {
+  id: string;
+  title: string;
+  description: string;
+  status: CurriculumStatus;
+  chapters: CurriculumChapterDefinition[];
+}
+
+export interface CurriculumDefinition {
+  grades: CurriculumGradeDefinition[];
+}
+
+export interface CurriculumProgress {
+  completedLessonIds: string[];
+}
+
 export interface LearningMode {
   id: string;
   title: string;
@@ -135,6 +172,7 @@ export interface Question {
   prompt: string;
   choices?: string[];
   answer: string;
+  acceptedAnswers?: string[];
   numerator?: number;
   denominator?: number;
   category?: string;
@@ -189,6 +227,7 @@ export interface AdventureDefinition {
   items: ItemDefinition[];
   enemies: EnemyDefinition[];
   campaign?: CampaignChapter[];
+  curriculum?: CurriculumDefinition;
   modes: LearningMode[];
   questionProvider: QuestionProvider;
   world: WorldDefinition;
@@ -196,7 +235,7 @@ export interface AdventureDefinition {
 }
 
 export interface AdventureSave {
-  schemaVersion: 2;
+  schemaVersion: 3;
   adventureId: AdventureId;
   revision: number;
   currency: number;
@@ -209,6 +248,7 @@ export interface AdventureSave {
   world: {mapId: string; x: number; y: number};
   stats: {correct: number; wrong: number; bestStreak: number};
   campaign: CampaignProgress;
+  curriculum: CurriculumProgress;
   masteryByKey: Record<string, MasteryRecord>;
   clientUpdatedAt: number;
 }

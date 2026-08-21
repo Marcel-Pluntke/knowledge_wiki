@@ -1,6 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {adventures} from './index';
 import {fractionMixedRate} from './fractions';
+import {curriculumModeIds,englishNumber,numberItems,spellingItems,teacherItems} from './vocabulary-curriculum';
 
 describe('adventure contract',()=>{
   it('uses unique stable ids and complete content',()=>{const ids=adventures.map(item=>item.id);expect(new Set(ids).size).toBe(ids.length);for(const adventure of adventures){expect(adventure.modes.length).toBeGreaterThan(0);expect(adventure.items.length).toBeGreaterThan(0);expect(adventure.enemies.length).toBeGreaterThan(0);expect(adventure.world.encounters.length).toBeGreaterThan(0);expect(adventure.merchant.name).toBeTruthy()}});
@@ -66,5 +67,42 @@ describe('adventure contract',()=>{
       expect(fractions.questionProvider.evaluate(proper,proper.answer)).toBe(true);
       expect(fractions.questionProvider.evaluate(mixed,mixed.answer)).toBe(true);
     }
+  });
+
+  it('provides the complete grade-five vocabulary curriculum',()=>{
+    const vocabulary=adventures.find(adventure=>adventure.id==='vocabulary')!;
+    expect(spellingItems.map(item=>item.en)).toEqual('school|teacher|pupil|class|classroom|book|textbook|workbook|exercise book|folder|pen|pencil|ruler|rubber|schoolbag|desk|chair|task|page|picture|family|mother|father|parents|brother|sister|friend|name|house|home|room|door|window|dog|cat|food|water|head|hand|clothes'.split('|'));
+    expect(numberItems.map(item=>item.en)).toEqual('one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|twenty-one|twenty-two|twenty-three|twenty-four|twenty-five|twenty-six|twenty-seven|twenty-eight|twenty-nine|thirty|thirty-one|thirty-two|thirty-three|thirty-four|thirty-five|thirty-six|thirty-seven|thirty-eight|thirty-nine|forty|forty-one|forty-two|forty-three|forty-four|forty-five|forty-six|forty-seven|forty-eight|forty-nine|fifty'.split('|'));
+    expect(numberItems.map(item=>item.en)).toEqual(Array.from({length:50},(_,index)=>englishNumber(index+1)));
+    expect(englishNumber(21)).toBe('twenty-one');
+    expect(englishNumber(40)).toBe('forty');
+    expect(teacherItems.map(item=>item.en)).toEqual(["Open your textbook on page eighteen.","Read the task.","Listen to the recording.","Close your workbook.","Write down the headline into your folder.","Write down five sentences into your exercise book.","Repeat after me.","Look at the picture.","Watch the video clip.","Compare your results to your bank neighbour's.","Do the task in your folder.","Talk to your bank neighbour.","Use a pencil."]);
+    expect(vocabulary.curriculum?.grades[0]).toMatchObject({id:'grade-5',status:'released'});
+    expect(vocabulary.curriculum?.grades[0].chapters.some(chapter=>chapter.id==='basics')).toBe(true);
+  });
+
+  it('guarantees writing, German-to-English choice and English-to-German choice in every curriculum mode',()=>{
+    const vocabulary=adventures.find(adventure=>adventure.id==='vocabulary')!;
+    for(const modeId of [curriculumModeIds.spelling,curriculumModeIds.numbers,curriculumModeIds.teachers,curriculumModeIds.mix]){
+      const questions=[1,2,3].map(sequence=>vocabulary.questionProvider.next({modeId,sequence,random:()=>0}));
+      expect(questions.map(question=>question.inputKind)).toEqual(['text','choice','choice']);
+      expect(questions[0].category).toContain('Schreiben');
+      expect(questions[1].category).toContain('Deutsch → Englisch');
+      expect(questions[2].category).toContain('Englisch → Deutsch');
+      expect(questions.every(question=>vocabulary.questionProvider.evaluate(question,question.answer))).toBe(true);
+    }
+  });
+
+  it('evaluates typed curriculum answers in a learner-friendly way',()=>{
+    const vocabulary=adventures.find(adventure=>adventure.id==='vocabulary')!;
+    const spelling=vocabulary.questionProvider.next({modeId:curriculumModeIds.spelling,sequence:1,random:()=>.06});
+    expect(spelling.answer).toBe('pupil');
+    expect(vocabulary.questionProvider.evaluate(spelling,' STUDENT! ')).toBe(true);
+    const number=vocabulary.questionProvider.next({modeId:curriculumModeIds.numbers,sequence:1,random:()=>.41});
+    expect(number.answer).toBe('twenty-one');
+    expect(vocabulary.questionProvider.evaluate(number,'Twenty one')).toBe(true);
+    const teacher=vocabulary.questionProvider.next({modeId:curriculumModeIds.teachers,sequence:1,random:()=>.72});
+    expect(teacher.answer).toContain('bank neighbour');
+    expect(vocabulary.questionProvider.evaluate(teacher,"compare your results to your bank neighbor's")).toBe(true);
   });
 });

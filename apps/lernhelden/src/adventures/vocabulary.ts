@@ -1,9 +1,11 @@
 import type {AdventureDefinition, Question, QuestionProvider} from '@lernhelden/engine';
 import words from './vocabulary-data.json';
 import {commonAchievements, createCampaign, createItems, ranks, shuffled, sprite} from './shared';
+import {curriculumModeIds, evaluateVocabularyAnswer, isVocabularyCurriculumMode, vocabularyCurriculumQuestion} from './vocabulary-curriculum';
 
 const provider: QuestionProvider = {
   next({modeId, sequence, random, mastery}) {
+    if(isVocabularyCurriculumMode(modeId))return vocabularyCurriculumQuestion({modeId,sequence,random,mastery});
     const due = words.filter(word => (mastery?.[`word-${word.en}`]?.dueAt ?? 0) <= Date.now());
     const word = (due.length ? due : words)[Math.floor(random() * (due.length || words.length))];
     const sourceKey = modeId === 'en-de' ? 'en' : 'de';
@@ -21,7 +23,7 @@ const provider: QuestionProvider = {
       hintSteps: [`Gesucht ist die Übersetzung von „${word[sourceKey]}“.`, `Die richtige Antwort lautet „${answer}“.`],
     } satisfies Question;
   },
-  evaluate(question, answer) { return question.answer === answer; },
+  evaluate: evaluateVocabularyAnswer,
 };
 
 const slots = ['helmet','weapon','shield','armor','boots'];
@@ -31,6 +33,20 @@ const itemNames = [
   'Drachenhelm','Heldenklinge','Sternenschild','Königsrüstung','Blitzstiefel',
 ];
 const campaignContent = createCampaign('vocabulary', ['Sich vorstellen','Familie und Freunde','Schule','Zuhause','Freizeit','Tiere und Natur','Essen und Einkaufen','Stadt und Weg','Zeit und Alltag','Reisen','Gesundheit','Geschichten erzählen'], ['de-en','en-de','spell'], ['word-slime','translation-goblin','book-skeleton','language-troll','grammar-knight','vocabulary-dragon'], slots) as {campaign: NonNullable<AdventureDefinition['campaign']>; enemies: never[]};
+const curriculumEnemies: AdventureDefinition['enemies'] = [
+  {id:'curriculum-spelling-slime',name:'Buchstaben-Schleim',place:'Grundlagenpfad',hp:24,attack:5,reward:24,xp:6,rule:'normal',sprite:sprite('curriculum-spelling-slime','Buchstaben-Schleim','word-slime')},
+  {id:'curriculum-number-goblin',name:'Zahlen-Goblin',place:'Grundlagenpfad',hp:30,attack:6,reward:30,xp:7,rule:'normal',sprite:sprite('curriculum-number-goblin','Zahlen-Goblin','translation-goblin')},
+  {id:'curriculum-classroom-skeleton',name:'Klassenraum-Skelett',place:'Grundlagenpfad',hp:36,attack:7,reward:36,xp:8,rule:'normal',sprite:sprite('curriculum-classroom-skeleton','Klassenraum-Skelett','book-skeleton')},
+  {id:'curriculum-basics-troll',name:'Grundlagen-Troll',place:'Grundlagenpfad',hp:45,attack:8,reward:45,xp:10,rule:'normal',sprite:sprite('curriculum-basics-troll','Grundlagen-Troll','language-troll')},
+];
+const regularEnemies = [
+  ['word-slime','Wort-Schleim','Wörterwiese',35,5,35,8],
+  ['translation-goblin','Übersetzungs-Goblin','Wörterwiese',70,8,70,10],
+  ['book-skeleton','Buch-Skelett','Bücherwald',120,12,115,13],
+  ['language-troll','Sprach-Troll','Bücherwald',180,16,175,16],
+  ['grammar-knight','Grammatik-Ritter','Sprachburg',260,21,260,20],
+  ['vocabulary-dragon','Vokabel-Drache','Sprachburg',380,27,420,28],
+].map(([id,name,place,hp,attack,reward,xp], index) => ({id:String(id),name:String(name),place:String(place),hp:Number(hp),attack:Number(attack),reward:Number(reward),xp:Number(xp),rule:index===1?'heal-on-miss':index===3?'armor-pierce':index===5?'fire':'normal',sprite:sprite(String(id),String(name))})) as AdventureDefinition['enemies'];
 
 export const vocabularyAdventure: AdventureDefinition = {
   id:'vocabulary', title:'Vokabel Held', subtitle:'Deutsch und Englisch im Wortkampf', status:'released',
@@ -40,15 +56,20 @@ export const vocabularyAdventure: AdventureDefinition = {
   ranks:ranks(['Wortlehrling','Sprachkämpfer','Wortwächter','Übersetzungsritter','Vokabelheld']),
   slots:{helmet:'Helm',weapon:'Schwert',shield:'Schild',armor:'Rüstung',boots:'Stiefel'},
   items:createItems('vocabulary', itemNames, slots),
-  enemies:[
-    ['word-slime','Wort-Schleim','Wörterwiese',35,5,35,8],
-    ['translation-goblin','Übersetzungs-Goblin','Wörterwiese',70,8,70,10],
-    ['book-skeleton','Buch-Skelett','Bücherwald',120,12,115,13],
-    ['language-troll','Sprach-Troll','Bücherwald',180,16,175,16],
-    ['grammar-knight','Grammatik-Ritter','Sprachburg',260,21,260,20],
-    ['vocabulary-dragon','Vokabel-Drache','Sprachburg',380,27,420,28],
-  ].map(([id,name,place,hp,attack,reward,xp], index) => ({id:String(id),name:String(name),place:String(place),hp:Number(hp),attack:Number(attack),reward:Number(reward),xp:Number(xp),rule:index===1?'heal-on-miss':index===3?'armor-pierce':index===5?'fire':'normal',sprite:sprite(String(id),String(name))})).concat(campaignContent.enemies) as AdventureDefinition['enemies'],
+  enemies:[...regularEnemies,...curriculumEnemies,...campaignContent.enemies],
   campaign:campaignContent.campaign,
+  curriculum:{grades:[
+    {id:'grade-5',title:'Klasse 5',description:'Englische Grundlagen für das sächsische Gymnasium.',status:'released',chapters:[
+      {id:'basics',index:1,title:'Grundlagen',description:'Buchstabieren, Zahlen und wichtige Sätze aus dem Unterricht.',status:'released',lessons:[
+        {id:'spelling',title:'Buchstabieren',description:'Schreibe 40 wichtige Wörter aus Schule und Alltag.',modeId:curriculumModeIds.spelling,enemyId:'curriculum-spelling-slime',status:'released'},
+        {id:'numbers-1-50',title:'Zahlen 1–50',description:'Erkenne und schreibe alle englischen Zahlen bis fifty.',modeId:curriculumModeIds.numbers,enemyId:'curriculum-number-goblin',status:'released'},
+        {id:'teacher-says',title:'What Teachers Often Say',description:'Verstehe 13 wichtige Anweisungen aus dem Englischunterricht.',modeId:curriculumModeIds.teachers,enemyId:'curriculum-classroom-skeleton',status:'released'},
+        {id:'basics-mix',title:'Gemischte Wiederholung',description:'Beweise dein Können mit Aufgaben aus allen drei Bereichen.',modeId:curriculumModeIds.mix,enemyId:'curriculum-basics-troll',status:'released',requiredLessonIds:['spelling','numbers-1-50','teacher-says']},
+      ]},
+      {id:'future-chapters',index:2,title:'Weitere Kapitel',description:'Neue Themen für Klasse 5 folgen.',status:'coming-soon',lessons:[]},
+    ]},
+    {id:'future-grades',title:'Weitere Klassen',description:'Neue Klassenstufen sind in Vorbereitung.',status:'coming-soon',chapters:[]},
+  ]},
   modes:[
     {id:'de-en',title:'Deutsch zu Englisch',description:'Finde die englische Übersetzung.'},
     {id:'en-de',title:'Englisch zu Deutsch',description:'Finde die deutsche Übersetzung.'},

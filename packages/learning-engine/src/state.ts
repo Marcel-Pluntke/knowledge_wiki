@@ -21,7 +21,7 @@ export function createProfile(displayName = '', avatarPresetId = 'avatar-1'): Pl
 
 export function createAdventureSave(definition: AdventureDefinition): AdventureSave {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     adventureId: definition.id,
     revision: 0,
     currency: 0,
@@ -34,6 +34,7 @@ export function createAdventureSave(definition: AdventureDefinition): AdventureS
     world: {mapId: definition.world.id, ...definition.world.start},
     stats: {correct: 0, wrong: 0, bestStreak: 0},
     campaign: {completedMissionIds: [], defeatedEliteIds: [], defeatedBossIds: [], openedChestIds: [], collectionIds: [], claimedDailyKeys: [], claimedWeeklyKeys: []},
+    curriculum: {completedLessonIds: []},
     masteryByKey: {},
     clientUpdatedAt: Date.now(),
   };
@@ -56,6 +57,7 @@ export function normalizeAdventureSave(value: unknown, definition: AdventureDefi
     if (owned.includes(id) && Number.isInteger(level) && Number(level) >= 0 && Number(level) <= 3) upgrades[id] = Number(level) as 0 | 1 | 2 | 3;
   });
   const campaignIds = new Set((definition.campaign ?? []).flatMap(chapter => [chapter.chestId, chapter.eliteEnemyId, chapter.bossEnemyId, ...chapter.missions.map(mission => mission.id)]));
+  const curriculumLessonIds = new Set((definition.curriculum?.grades ?? []).flatMap(grade => grade.chapters.flatMap(chapter => chapter.lessons.map(lesson => lesson.id))));
   const legacyTier = Math.max(0, ...owned.map(id => definition.items.find(item => item.id === id)?.tier ?? 0));
   const earlyMissions = (definition.campaign ?? []).filter(chapter => chapter.itemTier <= legacyTier).flatMap(chapter => chapter.missions.map(mission => mission.id));
   const rawCampaign = raw.campaign;
@@ -95,6 +97,9 @@ export function normalizeAdventureSave(value: unknown, definition: AdventureDefi
       collectionIds: list(rawCampaign?.collectionIds),
       claimedDailyKeys: list(rawCampaign?.claimedDailyKeys),
       claimedWeeklyKeys: list(rawCampaign?.claimedWeeklyKeys),
+    },
+    curriculum: {
+      completedLessonIds: list(raw.curriculum?.completedLessonIds, curriculumLessonIds),
     },
     masteryByKey: mastery,
     clientUpdatedAt: Number(raw.clientUpdatedAt) || Date.now(),
