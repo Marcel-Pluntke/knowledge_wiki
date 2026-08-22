@@ -1,13 +1,18 @@
 import type {AdventureDefinition, Question, QuestionProvider} from '@lernhelden/engine';
-import words from './vocabulary-data.json';
 import {commonAchievements, createCampaign, createItems, ranks, shuffled, sprite} from './shared';
-import {curriculumModeIds, evaluateVocabularyAnswer, isVocabularyCurriculumMode, vocabularyCurriculumQuestion} from './vocabulary-curriculum';
+import {curriculumModeIds, evaluateVocabularyAnswer, isVocabularyCurriculumMode, spellingItems, vocabularyCurriculumQuestion} from './vocabulary-curriculum';
+
+const words=spellingItems;
 
 const provider: QuestionProvider = {
-  next({modeId, sequence, random, mastery}) {
-    if(isVocabularyCurriculumMode(modeId))return vocabularyCurriculumQuestion({modeId,sequence,random,mastery});
+  next({modeId, sequence, random, mastery, previousLearningKey}) {
+    if(isVocabularyCurriculumMode(modeId))return vocabularyCurriculumQuestion({modeId,sequence,random,mastery,previousLearningKey});
     const due = words.filter(word => (mastery?.[`word-${word.en}`]?.dueAt ?? 0) <= Date.now());
-    const word = (due.length ? due : words)[Math.floor(random() * (due.length || words.length))];
+    const preferred=due.length?due:words;
+    const withoutPrevious=preferred.filter(word=>`word-${word.en}`!==previousLearningKey);
+    const fallback=words.filter(word=>`word-${word.en}`!==previousLearningKey);
+    const available=withoutPrevious.length?withoutPrevious:fallback.length?fallback:preferred;
+    const word = available[Math.floor(random() * available.length)];
     const sourceKey = modeId === 'en-de' ? 'en' : 'de';
     const targetKey = modeId === 'en-de' ? 'de' : 'en';
     const answer = word[targetKey];
@@ -19,6 +24,7 @@ const provider: QuestionProvider = {
       prompt: word[sourceKey],
       choices: spelling ? undefined : shuffled([answer, ...wrong], random),
       answer,
+      acceptedAnswers: spelling&&targetKey==='en'?[word.en,...(word.alternatives??[])]:undefined,
       category: word.category, learningKey:`word-${word.en}`,
       hintSteps: [`Gesucht ist die Übersetzung von „${word[sourceKey]}“.`, `Die richtige Antwort lautet „${answer}“.`],
     } satisfies Question;
@@ -61,7 +67,7 @@ export const vocabularyAdventure: AdventureDefinition = {
   curriculum:{grades:[
     {id:'grade-5',title:'Klasse 5',description:'Englische Grundlagen für das sächsische Gymnasium.',status:'released',chapters:[
       {id:'basics',index:1,title:'Grundlagen',description:'Buchstabieren, Zahlen und wichtige Sätze aus dem Unterricht.',status:'released',lessons:[
-        {id:'spelling',title:'Buchstabieren',description:'Schreibe 40 wichtige Wörter aus Schule und Alltag.',modeId:curriculumModeIds.spelling,enemyId:'curriculum-spelling-slime',status:'released'},
+        {id:'spelling',title:'Buchstabieren',description:'Schreibe über 160 wichtige Wörter aus den Themen der Klasse 5.',modeId:curriculumModeIds.spelling,enemyId:'curriculum-spelling-slime',status:'released'},
         {id:'numbers-1-50',title:'Zahlen 1–50',description:'Erkenne und schreibe alle englischen Zahlen bis fifty.',modeId:curriculumModeIds.numbers,enemyId:'curriculum-number-goblin',status:'released'},
         {id:'teacher-says',title:'What Teachers Often Say',description:'Verstehe 13 wichtige Anweisungen aus dem Englischunterricht.',modeId:curriculumModeIds.teachers,enemyId:'curriculum-classroom-skeleton',status:'released'},
         {id:'basics-mix',title:'Gemischte Wiederholung',description:'Beweise dein Können mit Aufgaben aus allen drei Bereichen.',modeId:curriculumModeIds.mix,enemyId:'curriculum-basics-troll',status:'released',requiredLessonIds:['spelling','numbers-1-50','teacher-says']},

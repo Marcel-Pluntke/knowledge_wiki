@@ -71,7 +71,10 @@ describe('adventure contract',()=>{
 
   it('provides the complete grade-five vocabulary curriculum',()=>{
     const vocabulary=adventures.find(adventure=>adventure.id==='vocabulary')!;
-    expect(spellingItems.map(item=>item.en)).toEqual('school|teacher|pupil|class|classroom|book|textbook|workbook|exercise book|folder|pen|pencil|ruler|rubber|schoolbag|desk|chair|task|page|picture|family|mother|father|parents|brother|sister|friend|name|house|home|room|door|window|dog|cat|food|water|head|hand|clothes'.split('|'));
+    expect(spellingItems.length).toBeGreaterThan(160);
+    expect(new Set(spellingItems.map(item=>item.id)).size).toBe(spellingItems.length);
+    expect(new Set(spellingItems.map(item=>item.category))).toEqual(new Set(['Schule','Familie und Freunde','Haus und Zuhause','Tagesablauf und Zeit','Kleidung','Freizeit','Einkaufen','Haustiere und Tiere','Körper und Gesundheit','Essen und Trinken','Farben','Begegnungen']));
+    expect(spellingItems.map(item=>item.en)).toEqual(expect.arrayContaining(['chair','classroom','family','living room','go to school','trousers','football','pound','rabbit','doctor','breakfast','thank you']));
     expect(numberItems.map(item=>item.en)).toEqual('one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|twenty-one|twenty-two|twenty-three|twenty-four|twenty-five|twenty-six|twenty-seven|twenty-eight|twenty-nine|thirty|thirty-one|thirty-two|thirty-three|thirty-four|thirty-five|thirty-six|thirty-seven|thirty-eight|thirty-nine|forty|forty-one|forty-two|forty-three|forty-four|forty-five|forty-six|forty-seven|forty-eight|forty-nine|fifty'.split('|'));
     expect(numberItems.map(item=>item.en)).toEqual(Array.from({length:50},(_,index)=>englishNumber(index+1)));
     expect(englishNumber(21)).toBe('twenty-one');
@@ -95,7 +98,8 @@ describe('adventure contract',()=>{
 
   it('evaluates typed curriculum answers in a learner-friendly way',()=>{
     const vocabulary=adventures.find(adventure=>adventure.id==='vocabulary')!;
-    const spelling=vocabulary.questionProvider.next({modeId:curriculumModeIds.spelling,sequence:1,random:()=>.06});
+    const pupilIndex=spellingItems.findIndex(item=>item.en==='pupil');
+    const spelling=vocabulary.questionProvider.next({modeId:curriculumModeIds.spelling,sequence:1,random:()=>(pupilIndex+.01)/spellingItems.length});
     expect(spelling.answer).toBe('pupil');
     expect(vocabulary.questionProvider.evaluate(spelling,' STUDENT! ')).toBe(true);
     const number=vocabulary.questionProvider.next({modeId:curriculumModeIds.numbers,sequence:1,random:()=>.41});
@@ -104,5 +108,15 @@ describe('adventure contract',()=>{
     const teacher=vocabulary.questionProvider.next({modeId:curriculumModeIds.teachers,sequence:1,random:()=>.72});
     expect(teacher.answer).toContain('bank neighbour');
     expect(vocabulary.questionProvider.evaluate(teacher,"compare your results to your bank neighbor's")).toBe(true);
+  });
+
+  it('never selects the same vocabulary item twice in a row',()=>{
+    const vocabulary=adventures.find(adventure=>adventure.id==='vocabulary')!;
+    for(const modeId of ['de-en',curriculumModeIds.spelling]){
+      const first=vocabulary.questionProvider.next({modeId,sequence:1,random:()=>0});
+      const second=vocabulary.questionProvider.next({modeId,sequence:2,random:()=>0,previousLearningKey:first.learningKey});
+      expect(second.learningKey).not.toBe(first.learningKey);
+      expect(second.prompt).not.toBe(first.prompt);
+    }
   });
 });

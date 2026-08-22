@@ -186,6 +186,7 @@ export interface QuestionContext {
   random: () => number;
   chapter?: number;
   mastery?: Record<string, MasteryRecord>;
+  previousLearningKey?: string;
 }
 
 export interface QuestionProvider {

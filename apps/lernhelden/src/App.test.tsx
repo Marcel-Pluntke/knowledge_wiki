@@ -266,4 +266,22 @@ describe('Campaign',()=>{
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({curriculum:{completedLessonIds:['spelling']}}));
     expect(screen.getByRole('button',{name:'Zurück zu den Übungen'})).toBeVisible();
   });
+
+  it('shows the submitted answer and correct solution after a wrong vocabulary attack',async()=>{
+    vi.spyOn(Math,'random').mockReturnValue(0);
+    const save=createAdventureSave(vocabularyAdventure);
+    sessionStorage.setItem('lernhelden:mode:vocabulary',curriculumModeIds.spelling);
+    sessionStorage.setItem('lernhelden:curriculum:vocabulary',JSON.stringify({gradeId:'grade-5',chapterId:'basics',lessonId:'spelling',modeId:curriculumModeIds.spelling,enemyId:'curriculum-spelling-slime'}));
+    render(<Battle adventure={vocabularyAdventure} initialSave={save} profile={createProfile('Testheld')} onSave={vi.fn().mockResolvedValue(undefined)} onProfile={vi.fn().mockResolvedValue(undefined)}/>);
+    beginBattle();
+    fireEvent.click(screen.getByRole('button',{name:/Funkenangriff/}));
+    fireEvent.change(screen.getByRole('textbox'),{target:{value:'chair'}});
+    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Antwort prüfen'}));await Promise.resolve()});
+    const review=screen.getByRole('region',{name:'Antwortauswertung'});
+    expect(within(review).getByText('Deine Antwort')).toBeVisible();
+    expect(within(review).getByText('chair')).toBeVisible();
+    expect(within(review).getByText('Richtige Lösung')).toBeVisible();
+    expect(within(review).getByText('school')).toBeVisible();
+    expect(screen.getByRole('button',{name:'Weiterkämpfen'})).toBeVisible();
+  });
 });

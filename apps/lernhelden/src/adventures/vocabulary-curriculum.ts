@@ -9,18 +9,77 @@ export type VocabularyCurriculumItem = {
   alternatives?: string[];
 };
 
+type VocabularyTuple = readonly [id:string,de:string,en:string,alternatives?:string[]];
+const topicItems=(category:string,items:VocabularyTuple[]):VocabularyCurriculumItem[]=>items.map(([id,de,en,alternatives])=>({id:`spelling-${id}`,de,en,category,alternatives}));
+
+// The topics follow the Saxon grammar-school curriculum for grades 5/6, with
+// the grade-five priorities Personal Identity and Body and Health.
 export const spellingItems: VocabularyCurriculumItem[] = [
-  ['school','Schule','school'],['teacher','Lehrer/in','teacher'],['pupil','Schüler/in','pupil',['student']],['class','Klasse','class'],
-  ['classroom','Klassenzimmer','classroom'],['book','Buch','book'],['textbook','Schulbuch','textbook'],['workbook','Arbeitsheft','workbook'],
-  ['exercise-book','Heft','exercise book'],['folder','Hefter','folder'],['pen','Stift','pen'],['pencil','Bleistift','pencil'],
-  ['ruler','Lineal','ruler'],['rubber','Radiergummi','rubber',['eraser']],['schoolbag','Schultasche','schoolbag',['school bag']],['desk','Schultisch','desk'],
-  ['chair','Stuhl','chair'],['task','Aufgabe','task'],['page','Seite','page'],['picture','Bild','picture'],
-  ['family','Familie','family'],['mother','Mutter','mother'],['father','Vater','father'],['parents','Eltern','parents'],
-  ['brother','Bruder','brother'],['sister','Schwester','sister'],['friend','Freund/in','friend'],['name','Name','name'],
-  ['house','Haus','house'],['home','Zuhause','home'],['room','Zimmer','room'],['door','Tür','door'],
-  ['window','Fenster','window'],['dog','Hund','dog'],['cat','Katze','cat'],['food','Essen','food'],
-  ['water','Wasser','water'],['head','Kopf','head'],['hand','Hand','hand'],['clothes','Kleidung','clothes'],
-].map(([id,de,en,alternatives])=>({id:`spelling-${id}`,de,en,category:'Buchstabieren',alternatives})) as VocabularyCurriculumItem[];
+  ...topicItems('Schule',[
+    ['school','Schule','school'],['teacher','Lehrer/in','teacher'],['pupil','Schüler/in','pupil',['student']],['class','Klasse','class'],
+    ['classroom','Klassenzimmer','classroom'],['book','Buch','book'],['textbook','Schulbuch','textbook'],['workbook','Arbeitsheft','workbook'],
+    ['exercise-book','Heft','exercise book'],['folder','Hefter','folder'],['pen','Stift','pen'],['pencil','Bleistift','pencil'],
+    ['ruler','Lineal','ruler'],['rubber','Radiergummi','rubber',['eraser']],['schoolbag','Schultasche','schoolbag',['school bag']],['desk','Schultisch','desk'],
+    ['chair','Stuhl','chair'],['task','Aufgabe','task'],['page','Seite','page'],['picture','Bild','picture'],
+    ['lesson','Unterrichtsstunde','lesson'],['homework','Hausaufgaben','homework'],['break','Pause','break'],['playground','Schulhof','playground'],['computer','Computer','computer'],
+  ]),
+  ...topicItems('Familie und Freunde',[
+    ['family','Familie','family'],['mother','Mutter','mother'],['father','Vater','father'],['parents','Eltern','parents'],
+    ['brother','Bruder','brother'],['sister','Schwester','sister'],['friend','Freund/in','friend'],['name','Name','name'],
+    ['child','Kind','child'],['children','Kinder','children'],['boy','Junge','boy'],['girl','Mädchen','girl'],
+    ['grandmother','Großmutter','grandmother',['grandma']],['grandfather','Großvater','grandfather',['grandpa']],['aunt','Tante','aunt'],['uncle','Onkel','uncle'],
+    ['cousin','Cousin/Cousine','cousin'],['birthday','Geburtstag','birthday'],
+  ]),
+  ...topicItems('Haus und Zuhause',[
+    ['house','Haus','house'],['home','Zuhause','home'],['room','Zimmer','room'],['door','Tür','door'],['window','Fenster','window'],
+    ['kitchen','Küche','kitchen'],['bathroom','Badezimmer','bathroom'],['bedroom','Schlafzimmer','bedroom'],['living-room','Wohnzimmer','living room'],
+    ['garden','Garten','garden'],['bed','Bett','bed'],['lamp','Lampe','lamp'],['cupboard','Schrank','cupboard'],['key','Schlüssel','key'],
+  ]),
+  ...topicItems('Tagesablauf und Zeit',[
+    ['morning','Morgen','morning'],['afternoon','Nachmittag','afternoon'],['evening','Abend','evening'],['night','Nacht','night'],
+    ['day','Tag','day'],['week','Woche','week'],['today','heute','today'],['tomorrow','morgen','tomorrow'],['breakfast','Frühstück','breakfast'],
+    ['get-up','aufstehen','get up'],['go-to-school','zur Schule gehen','go to school'],['have-lunch','zu Mittag essen','have lunch'],
+    ['come-home','nach Hause kommen','come home'],['go-to-bed','ins Bett gehen','go to bed'],
+  ]),
+  ...topicItems('Kleidung',[
+    ['clothes','Kleidung','clothes'],['shirt','Hemd','shirt'],['t-shirt','T-Shirt','T-shirt'],['trousers','Hose','trousers',['pants']],
+    ['jeans','Jeans','jeans'],['dress','Kleid','dress'],['skirt','Rock','skirt'],['jacket','Jacke','jacket'],['coat','Mantel','coat'],
+    ['shoe','Schuh','shoe'],['socks','Socken','socks'],['hat','Hut','hat'],
+  ]),
+  ...topicItems('Freizeit',[
+    ['hobby','Hobby','hobby'],['free-time','Freizeit','free time'],['play','spielen','play'],['read','lesen','read'],
+    ['swim','schwimmen','swim'],['dance','tanzen','dance'],['sing','singen','sing'],['draw','zeichnen','draw'],
+    ['music','Musik','music'],['game','Spiel','game'],['football','Fußball','football',['soccer']],['bicycle','Fahrrad','bicycle',['bike']],
+  ]),
+  ...topicItems('Einkaufen',[
+    ['shop','Geschäft','shop'],['buy','kaufen','buy'],['sell','verkaufen','sell'],['money','Geld','money'],['price','Preis','price'],
+    ['pound','Pfund','pound'],['pence','Pence','pence'],['cheap','billig','cheap'],['expensive','teuer','expensive'],['bag','Tasche','bag'],
+  ]),
+  ...topicItems('Haustiere und Tiere',[
+    ['dog','Hund','dog'],['cat','Katze','cat'],['pet','Haustier','pet'],['animal','Tier','animal'],['horse','Pferd','horse'],['cow','Kuh','cow'],
+    ['sheep','Schaf','sheep'],['bird','Vogel','bird'],['fish','Fisch','fish'],['rabbit','Kaninchen','rabbit'],['mouse','Maus','mouse'],['tree','Baum','tree'],
+  ]),
+  ...topicItems('Körper und Gesundheit',[
+    ['head','Kopf','head'],['hand','Hand','hand'],['body','Körper','body'],['eye','Auge','eye'],['ear','Ohr','ear'],['nose','Nase','nose'],
+    ['mouth','Mund','mouth'],['tooth','Zahn','tooth'],['teeth','Zähne','teeth'],['arm','Arm','arm'],['leg','Bein','leg'],
+    ['foot','Fuß','foot'],['feet','Füße','feet'],['ill','krank','ill',['sick']],['doctor','Arzt/Ärztin','doctor'],
+  ]),
+  ...topicItems('Essen und Trinken',[
+    ['food','Essen','food'],['water','Wasser','water'],['apple','Apfel','apple'],['bread','Brot','bread'],['milk','Milch','milk'],
+    ['cheese','Käse','cheese'],['egg','Ei','egg'],['meat','Fleisch','meat'],['chicken','Hähnchen','chicken'],['rice','Reis','rice'],
+    ['potato','Kartoffel','potato'],['tomato','Tomate','tomato'],['banana','Banane','banana'],['orange','Orange','orange'],
+    ['juice','Saft','juice'],['tea','Tee','tea'],['hungry','hungrig','hungry'],['thirsty','durstig','thirsty'],
+  ]),
+  ...topicItems('Farben',[
+    ['red','rot','red'],['blue','blau','blue'],['green','grün','green'],['yellow','gelb','yellow'],
+    ['black','schwarz','black'],['white','weiß','white'],['brown','braun','brown'],['grey','grau','grey',['gray']],
+  ]),
+  ...topicItems('Begegnungen',[
+    ['hello','Hallo','hello'],['goodbye','Auf Wiedersehen','goodbye'],['please','bitte','please'],['thank-you','danke','thank you'],
+    ['sorry','Entschuldigung','sorry'],['age','Alter','age'],['address','Adresse','address'],['town','Stadt','town'],
+    ['country','Land','country'],['language','Sprache','language'],
+  ]),
+];
 
 const smallNumbers = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
 const tens: Record<number,string> = {20:'twenty',30:'thirty',40:'forty',50:'fifty'};
@@ -80,6 +139,13 @@ function dueItems(items: VocabularyCurriculumItem[], mastery?: Record<string,Mas
   return due.length?due:items;
 }
 
+function withoutImmediateRepeat(items: VocabularyCurriculumItem[],context: QuestionContext,pool: VocabularyCurriculumItem[]) {
+  const filtered=items.filter(item=>`curriculum:grade-5:${item.id}`!==context.previousLearningKey);
+  if(filtered.length)return filtered;
+  const fallback=pool.filter(item=>`curriculum:grade-5:${item.id}`!==context.previousLearningKey);
+  return fallback.length?fallback:items;
+}
+
 function itemPool(context: QuestionContext) {
   const direct=modePool.get(context.modeId);
   if(direct)return pools[direct];
@@ -90,7 +156,7 @@ function itemPool(context: QuestionContext) {
 
 export function vocabularyCurriculumQuestion(context: QuestionContext): Question {
   const pool=itemPool(context);
-  const available=dueItems(pool,context.mastery);
+  const available=withoutImmediateRepeat(dueItems(pool,context.mastery),context,pool);
   const item=available[Math.min(available.length-1,Math.floor(context.random()*available.length))];
   const taskType=Math.max(0,context.sequence-1)%3;
   const englishToGerman=taskType===2;

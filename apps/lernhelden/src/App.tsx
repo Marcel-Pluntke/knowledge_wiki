@@ -206,6 +206,7 @@ function Inventory({adventure,save,profile,onSave,onEvent}:{adventure:AdventureD
 function Shop({adventure,save,onSave,onEvent}:{adventure:AdventureDefinition;save:AdventureSave;onSave:(save:AdventureSave)=>Promise<void>;onEvent:(type:'item-bought')=>Promise<void>}){const currentRank=rankFor(adventure,save.xp),tier=adventure.ranks.indexOf(currentRank)+1;const purchase=async(id:string)=>{const next=buyItem(save,adventure,id);if(next===save)return;await onSave(next);await onEvent('item-bought')};const tiers=[...new Set(adventure.items.map(item=>item.tier))];return <div className="page shop-page"><button className="back" onClick={()=>go(`/adventure/${adventure.id}`)}>← Zurück</button><div className="heading-row"><div><p className="eyebrow">Ausrüstung für dein Abenteuer</p><h1>{adventure.merchant.shopTitle}</h1></div><div className="wallet"><Sprite sprite={adventure.currency.sprite} size={44}/><strong>{save.currency}</strong><span>{adventure.currency.name}</span></div></div><section className={`merchant-shop ${adventure.merchant.backdrop}`}><div className="merchant-counter"><MerchantPortrait merchant={adventure.merchant}/><div className="merchant-speech"><strong>{adventure.merchant.name}</strong><p>{adventure.merchant.greeting}</p><small>{currentRank.title} · {save.xp} Rangpunkte</small></div></div><div className="merchant-note">{adventure.merchant.note}</div>{tiers.map(itemTier=><section className={`merchant-shelf ${itemTier>tier?'closed':'open'}`} key={itemTier}><header><div><span>Regal {itemTier}</span><h2>{adventure.merchant.shelfNames[itemTier-1]??`Stufe ${itemTier}`}</h2></div><strong>{itemTier>tier?`Ab Rang ${itemTier}`:'Geöffnet'}</strong></header><div className="shop-grid">{adventure.items.filter(item=>item.tier===itemTier).map(item=>{const owned=save.ownedItemIds.includes(item.id),locked=item.tier>tier;return <article key={item.id} className={locked?'locked':''}><ItemSprite item={item} size={76}/><div><small>Stufe {item.tier}</small><h3>{item.name}</h3><p>Stärke {item.power} · Schutz {item.defense} · Glück {item.luck}</p>{owned?<button disabled>Bereits in der Truhe</button>:locked?<button disabled>Ab Rang {item.tier}</button>:<button onClick={()=>void purchase(item.id)}>{item.cost} {adventure.currency.name}</button>}</div></article>})}</div></section>)}</section></div>}
 
 type BattleAnimation = {direction:'player'|'enemy'; attackId:BattleState['selectedAttackId']};
+type AnswerResult = {given:string; expected:string; correct:boolean};
 
 function CompanionActor({definition,pose,stage,text,compact=false}:{definition:CompanionPresentation;pose:CompanionPose;stage:1|2|3;text?:string;compact?:boolean}){
   return <aside className={`companion-actor pose-${pose} stage-${stage} ${compact?'compact':''}`} style={{'--companion-accent':definition.accent} as React.CSSProperties} aria-label={`${definition.name}, ${definition.species}, Stufe ${stage}`}><div className="companion-sprite-wrap"><span className="companion-runes" aria-hidden="true">{Array.from({length:Math.max(0,stage-1)},(_,index)=><i key={index}/>)}</span><Sprite sprite={definition.sprites[pose]} size={compact?68:78+stage*8}/></div>{text&&<div className="companion-speech"><small>{definition.name} · {definition.species}</small><p role="status">{text}</p></div>}</aside>;
@@ -218,6 +219,13 @@ function VisualFocus({help}:{help:FocusHelp}){
 function BattleIntro({adventure,enemy,companion,panel,onPanel,onBegin}:{adventure:AdventureDefinition;enemy:AdventureDefinition['enemies'][number];companion:CompanionPresentation;panel:0|1;onPanel:()=>void;onBegin:()=>void}){
   const lines=comicText(enemy.name,enemy.rule,companion);
   return <section className={`battle-intro ${adventure.id} ${adventure.id==='fractions'?'runes':''}`} aria-label="Kampf-Intro"><header><span>Pixel-Chronik</span><strong>1 Kampf · 2 Panels</strong></header><div className="comic-panel">{panel===0?<><Sprite sprite={enemy.sprite} size={154}/><div><small>{enemy.place}</small><h1>{enemy.name}</h1><p>Ein neuer Gegner versperrt den Weg.</p></div></>:<><div className="comic-duo"><Sprite sprite={enemy.sprite} size={118}/><Sprite sprite={companion.sprites.idle} size={92}/></div><div><p className="enemy-line">{lines.enemy}</p><p className="companion-line">{lines.companion}</p></div></>}</div><footer><button className="secondary" onClick={onBegin}>Überspringen</button>{panel===0?<button onClick={onPanel}>Weiter <Icon name="arrow-right" size={18}/></button>:<button onClick={onBegin}>Kampf beginnen</button>}</footer></section>;
+}
+
+function AnswerReview({result}:{result:AnswerResult}){
+  return <div className={`answer-review ${result.correct?'correct':'wrong'}`} role="region" aria-label="Antwortauswertung">
+    <div><span>Deine Antwort</span><strong>{result.given}</strong></div>
+    <div><span>Richtige Lösung</span><strong>{result.expected}</strong></div>
+  </div>;
 }
 
 export function Battle({adventure,initialSave,profile,onSave,onProfile}:{adventure:AdventureDefinition;initialSave:AdventureSave;profile:PlayerProfile;onSave:(save:AdventureSave)=>Promise<void>;onProfile:(profile:PlayerProfile)=>Promise<void>}){
@@ -245,6 +253,7 @@ export function Battle({adventure,initialSave,profile,onSave,onProfile}:{adventu
   const [save,setSave]=useState(initialSave);
   const [question,setQuestion]=useState<Question|null>(null);
   const [answer,setAnswer]=useState('');
+  const [answerResult,setAnswerResult]=useState<AnswerResult|null>(null);
   const [feedback,setFeedback]=useState('');
   const [sequence,setSequence]=useState(0);
   const [animation,setAnimation]=useState<BattleAnimation|null>(null);
@@ -257,6 +266,7 @@ export function Battle({adventure,initialSave,profile,onSave,onProfile}:{adventu
   const previousBattle=useRef<BattleState|null>(null);
   const animationTimers=useRef<number[]>([]);
   const battleStageRef=useRef<HTMLElement>(null);
+  const lastLearningKey=useRef<string|undefined>(undefined);
 
   const showAnimation=(direction:BattleAnimation['direction'],attackId:BattleAnimation['attackId'],delay=0)=>{
     const start=()=>{
@@ -287,8 +297,11 @@ export function Battle({adventure,initialSave,profile,onSave,onProfile}:{adventu
   const newQuestion=()=>{
     const nextSequence=sequence+1;
     setSequence(nextSequence);
-    setQuestion(adventure.questionProvider.next({modeId:questionModeId,sequence:nextSequence,random:Math.random,chapter:chapter?.index,mastery:save.masteryByKey}));
+    const nextQuestion=adventure.questionProvider.next({modeId:questionModeId,sequence:nextSequence,random:Math.random,chapter:chapter?.index,mastery:save.masteryByKey,previousLearningKey:lastLearningKey.current});
+    setQuestion(nextQuestion);
+    lastLearningKey.current=nextQuestion.learningKey;
     setAnswer('');
+    setAnswerResult(null);
     setFeedback('');
     setHintLevel(0);
     setCompanionText('Schau dir die Aufgabe in Ruhe an. Du hast Zeit.');
@@ -318,6 +331,7 @@ export function Battle({adventure,initialSave,profile,onSave,onProfile}:{adventu
     if(!question)return;
     focusBattleStage();
     const correct=adventure.questionProvider.evaluate(question,answer);
+    setAnswerResult({given:answer,expected:question.answer,correct});
     if(correct){
       const hit=resolveCorrect(battle,enemy,curriculumRun?0:stats.power);
       let next=recordMastery({...save,currency:save.currency+2+Math.floor(stats.luck/4),xp:save.xp+1,completed:save.completed+1,stats:{...save.stats,correct:save.stats.correct+1,bestStreak:Math.max(save.stats.bestStreak,hit.state.streak)}},question,true);
@@ -343,13 +357,13 @@ export function Battle({adventure,initialSave,profile,onSave,onProfile}:{adventu
       const counter=resolveCounter(battle,enemy,stats.defense,true);
       const next=recordMastery({...save,stats:{...save.stats,wrong:save.stats.wrong+1}},question,false);
       setBattle(counter.state);
-      setFeedback(`Noch nicht. Richtig ist ${question.answer}. ${enemy.name} trifft mit ${counter.damage}.`);
+      setFeedback(`Noch nicht. ${enemy.name} trifft mit ${counter.damage}.`);
       setCompanionText(companion.wrong[(sequence-1)%companion.wrong.length]);
       setCompanionPose('concerned');
       await persistEvent(next,'answer-wrong');
     }
   };
-  const continueBattle=()=>{setBattle(nextTurn(battle));setQuestion(null);setFeedback('');setHintLevel(0);setCompanionPose('idle')};
+  const continueBattle=()=>{setBattle(nextTurn(battle));setQuestion(null);setFeedback('');setAnswerResult(null);setHintLevel(0);setCompanionPose('idle')};
   const revealHint=()=>{setHintLevel(current=>Math.min(3,current+1));setCompanionPose('hint');setCompanionText('Ich zeige dir eine Spur. Du findest den nächsten Schritt.')};
   const projectile=animation&&battleAttacks.find(attack=>attack.id===animation.attackId);
   const playerClass=`fighter player ${animation?.direction==='player'?'fighter-attacking':animation?.direction==='enemy'?'fighter-hit':''}`;
@@ -375,7 +389,7 @@ export function Battle({adventure,initialSave,profile,onSave,onProfile}:{adventu
       <div className="battle-actions">
         {battle.phase==='attack-select'&&<section><h2>Wähle deinen Angriff</h2><div className="attack-grid">{battleAttacks.map(attack=><button key={attack.id} disabled={(battle.cooldowns[attack.id]??0)>0} onClick={()=>choose(attack.id)}><Sprite sprite={attack.sprite} size={58}/><strong>{attack.name}</strong><small>{attack.id==='chain'?'Stärker mit Serie':`${attack.damage} Kraft · ${attack.cooldown} Abklingzeit`}</small></button>)}</div></section>}
         {battle.phase==='question'&&question&&<section className="question-card"><div className="question-companion"><CompanionActor definition={companion} pose={hintLevel?'hint':companionPose} stage={level} text={companionText} compact/></div><span>{question.category}</span><h2>{question.inputKind==='fraction'?<FractionExpression text={question.prompt}/>:question.prompt}</h2>{question.inputKind==='choice'?<div className="choice-grid">{question.choices?.map(choice=><button key={choice} onClick={()=>setAnswer(choice)} className={answer===choice?'selected':''}>{choice}</button>)}</div>:question.inputKind==='fraction'?<FractionInput value={answer} onChange={setAnswer}/>:<input className="answer-input" inputMode={question.inputKind==='text'?'text':'decimal'} autoCapitalize="none" spellCheck={false} value={answer} onChange={event=>setAnswer(event.target.value)} onKeyDown={event=>event.key==='Enter'&&void submit()}/>}<div className="question-actions"><button disabled={!answer} onClick={()=>void submit()}>Antwort prüfen</button><button className="secondary" disabled={hintLevel>=3} onClick={revealHint}>{hintLevel===0?'Tipp vom Begleiter':hintLevel<3?'Noch ein Tipp':'Alle Tipps gezeigt'}</button></div>{hintLevel===1&&<div className="companion-hint" role="status">{question.hintSteps[0]??'Betrachte die Aufgabe Schritt für Schritt.'}</div>}{hintLevel===2&&currentFocus&&<VisualFocus help={currentFocus}/>} {hintLevel===3&&<div className="companion-hint solution" role="status">{question.hintSteps.at(-1)??`Die Lösung ist ${question.answer}.`}</div>}</section>}
-        {(battle.phase==='resolved'||battle.phase==='won'||battle.phase==='lost')&&<section className={`result ${battle.phase}`}><h2>{battle.phase==='won'?'Sieg!':battle.phase==='lost'?'Dein Held braucht eine Pause':'Nächster Zug'}</h2><p>{feedback}</p>{battle.phase==='resolved'?<button onClick={continueBattle}>Weiterkämpfen</button>:<button onClick={()=>go(curriculumRun?curriculumReturn:`/adventure/${adventure.id}/world`)}>{curriculumRun?'Zurück zu den Übungen':'Zur Weltkarte'}</button>}</section>}
+        {(battle.phase==='resolved'||battle.phase==='won'||battle.phase==='lost')&&<section className={`result ${battle.phase}`}><h2>{battle.phase==='won'?'Sieg!':battle.phase==='lost'?'Dein Held braucht eine Pause':'Auflösung'}</h2><p>{feedback}</p>{answerResult&&<AnswerReview result={answerResult}/>} {battle.phase==='resolved'?<button onClick={continueBattle}>Weiterkämpfen</button>:<button onClick={()=>go(curriculumRun?curriculumReturn:`/adventure/${adventure.id}/world`)}>{curriculumRun?'Zurück zu den Übungen':'Zur Weltkarte'}</button>}</section>}
       </div>
     </div>
   </div>;
