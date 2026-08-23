@@ -1,0 +1,253 @@
+.football-pitch {
+  scroll-margin-top: 96px;
+}
+
+.football-question-card {
+  scroll-margin-top: 88px;
+}
+
+.football-answer-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.football-whole-input {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  color: #9eb0a4;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.football-whole-input input {
+  width: 72px;
+  height: 54px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 10px;
+  color: #fff;
+  background: rgba(255,255,255,.07);
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  outline: none;
+}
+
+.football-whole-input input:focus {
+  border-color: #58df83;
+  box-shadow: 0 0 0 3px rgba(88,223,131,.15);
+}
+
+.football-pitch.football-playback {
+  animation: football-field-focus .46s ease-out;
+}
+
+.football-pitch.play-dribble.football-playback .match-ball.choice-upper {
+  animation: football-ball-kick-upper .82s cubic-bezier(.2,.75,.2,1);
+}
+
+.football-pitch.play-dribble.football-playback .match-ball.choice-lower {
+  animation: football-ball-kick-lower .82s cubic-bezier(.2,.75,.2,1);
+}
+
+.football-pitch.play-dribble.football-playback .football-defender.upper {
+  animation: football-defender-upper .78s cubic-bezier(.2,.7,.2,1);
+}
+
+.football-pitch.play-dribble.football-playback .football-defender.lower {
+  animation: football-defender-lower .78s cubic-bezier(.2,.7,.2,1);
+}
+
+/* A shot is played from the attacking third, independent of the reset position
+   already stored by the match logic. The keyframes therefore explicitly draw
+   the ball from the shooting zone to the goal and, for saves, back into play. */
+.football-pitch.play-shot.football-playback.outcome-goal .match-ball.choice-upper {
+  animation: football-shot-goal-upper 2.2s cubic-bezier(.18,.72,.2,1) both;
+}
+
+.football-pitch.play-shot.football-playback.outcome-goal .match-ball.choice-lower {
+  animation: football-shot-goal-lower 2.2s cubic-bezier(.18,.72,.2,1) both;
+}
+
+.football-pitch.play-shot.football-playback.outcome-saved .match-ball.choice-upper {
+  animation: football-shot-save-upper 2.2s cubic-bezier(.18,.72,.2,1) both;
+}
+
+.football-pitch.play-shot.football-playback.outcome-saved .match-ball.choice-lower {
+  animation: football-shot-save-lower 2.2s cubic-bezier(.18,.72,.2,1) both;
+}
+
+.football-pitch.play-shot.football-playback.outcome-goal .football-keeper.upper {
+  animation: football-keeper-dive-upper-miss 1.6s cubic-bezier(.16,.8,.2,1) both;
+}
+
+.football-pitch.play-shot.football-playback.outcome-goal .football-keeper.lower {
+  animation: football-keeper-dive-lower-miss 1.6s cubic-bezier(.16,.8,.2,1) both;
+}
+
+.football-pitch.play-shot.football-playback.outcome-saved .football-keeper.upper {
+  animation: football-keeper-save-upper 2.05s cubic-bezier(.16,.8,.2,1) both;
+}
+
+.football-pitch.play-shot.football-playback.outcome-saved .football-keeper.lower {
+  animation: football-keeper-save-lower 2.05s cubic-bezier(.16,.8,.2,1) both;
+}
+
+.football-pitch.play-shot.football-playback.outcome-goal .football-goal.right {
+  animation: football-net-hit .62s ease-out .9s 2;
+}
+
+.football-pitch.outcome-goal:not(.football-playback) .match-ball,
+.football-pitch.outcome-saved:not(.football-playback) .match-ball {
+  top: 50%;
+}
+
+@keyframes football-field-focus {
+  0% { filter: brightness(1); }
+  45% { filter: brightness(1.12); }
+  100% { filter: brightness(1); }
+}
+
+@keyframes football-ball-kick-upper {
+  0% { transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+  28% { transform: translate(-50%,-72%) scale(1.18) rotate(-70deg); }
+  62% { transform: translate(-50%,-58%) scale(1.07) rotate(-150deg); }
+  100% { transform: translate(-50%,-50%) scale(1) rotate(-210deg); }
+}
+
+@keyframes football-ball-kick-lower {
+  0% { transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+  28% { transform: translate(-50%,-28%) scale(1.18) rotate(70deg); }
+  62% { transform: translate(-50%,-42%) scale(1.07) rotate(150deg); }
+  100% { transform: translate(-50%,-50%) scale(1) rotate(210deg); }
+}
+
+@keyframes football-defender-upper {
+  0% { top: 50%; transform: translate(-50%,-50%) rotate(0deg) scale(1); }
+  34% { top: 36%; transform: translate(-54%,-50%) rotate(-7deg) scale(1.03); }
+  62% { top: 22%; transform: translate(-60%,-50%) rotate(-16deg) scale(1.1); }
+  82% { top: 26%; transform: translate(-54%,-50%) rotate(-11deg) scale(1.04); }
+  100% { top: 29%; transform: translate(-50%,-50%) rotate(-8deg) scale(1); }
+}
+
+@keyframes football-defender-lower {
+  0% { top: 50%; transform: translate(-50%,-50%) rotate(0deg) scale(1); }
+  34% { top: 64%; transform: translate(-54%,-50%) rotate(7deg) scale(1.03); }
+  62% { top: 78%; transform: translate(-60%,-50%) rotate(16deg) scale(1.1); }
+  82% { top: 74%; transform: translate(-54%,-50%) rotate(11deg) scale(1.04); }
+  100% { top: 71%; transform: translate(-50%,-50%) rotate(8deg) scale(1); }
+}
+
+@keyframes football-shot-goal-upper {
+  0% { left: 84%; top: 50%; opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+  18% { left: 88%; top: 44%; transform: translate(-50%,-50%) scale(1.07) rotate(-70deg); }
+  40% { left: 93%; top: 33%; transform: translate(-50%,-50%) scale(1.12) rotate(-160deg); }
+  62% { left: 96%; top: 24%; transform: translate(-50%,-50%) scale(1.02) rotate(-250deg); }
+  78% { left: 97%; top: 22%; opacity: 1; transform: translate(-50%,-50%) scale(.96) rotate(-330deg); }
+  91% { left: 97%; top: 22%; opacity: 0; transform: translate(-50%,-50%) scale(.9) rotate(-390deg); }
+  100% { left: 50%; top: 50%; opacity: 0; transform: translate(-50%,-50%) scale(.9) rotate(-390deg); }
+}
+
+@keyframes football-shot-goal-lower {
+  0% { left: 84%; top: 50%; opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+  18% { left: 88%; top: 56%; transform: translate(-50%,-50%) scale(1.07) rotate(70deg); }
+  40% { left: 93%; top: 67%; transform: translate(-50%,-50%) scale(1.12) rotate(160deg); }
+  62% { left: 96%; top: 76%; transform: translate(-50%,-50%) scale(1.02) rotate(250deg); }
+  78% { left: 97%; top: 78%; opacity: 1; transform: translate(-50%,-50%) scale(.96) rotate(330deg); }
+  91% { left: 97%; top: 78%; opacity: 0; transform: translate(-50%,-50%) scale(.9) rotate(390deg); }
+  100% { left: 50%; top: 50%; opacity: 0; transform: translate(-50%,-50%) scale(.9) rotate(390deg); }
+}
+
+@keyframes football-shot-save-upper {
+  0% { left: 84%; top: 50%; transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+  18% { left: 88%; top: 43%; transform: translate(-50%,-50%) scale(1.08) rotate(-65deg); }
+  38% { left: 92%; top: 33%; transform: translate(-50%,-50%) scale(1.12) rotate(-145deg); }
+  52% { left: 94%; top: 27%; transform: translate(-50%,-50%) scale(1.14) rotate(-205deg); }
+  62% { left: 91%; top: 31%; transform: translate(-50%,-50%) scale(.92) rotate(-260deg); }
+  76% { left: 83%; top: 38%; transform: translate(-50%,-50%) scale(1) rotate(-325deg); }
+  89% { left: 74%; top: 45%; transform: translate(-50%,-50%) scale(.98) rotate(-390deg); }
+  100% { left: 67%; top: 50%; transform: translate(-50%,-50%) scale(1) rotate(-430deg); }
+}
+
+@keyframes football-shot-save-lower {
+  0% { left: 84%; top: 50%; transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+  18% { left: 88%; top: 57%; transform: translate(-50%,-50%) scale(1.08) rotate(65deg); }
+  38% { left: 92%; top: 67%; transform: translate(-50%,-50%) scale(1.12) rotate(145deg); }
+  52% { left: 94%; top: 73%; transform: translate(-50%,-50%) scale(1.14) rotate(205deg); }
+  62% { left: 91%; top: 69%; transform: translate(-50%,-50%) scale(.92) rotate(260deg); }
+  76% { left: 83%; top: 62%; transform: translate(-50%,-50%) scale(1) rotate(325deg); }
+  89% { left: 74%; top: 55%; transform: translate(-50%,-50%) scale(.98) rotate(390deg); }
+  100% { left: 67%; top: 50%; transform: translate(-50%,-50%) scale(1) rotate(430deg); }
+}
+
+@keyframes football-keeper-dive-upper-miss {
+  0% { top: 50%; right: 2.5%; transform: translate(0,-50%) rotate(0deg) scale(1); }
+  18% { top: 45%; right: 4%; transform: translate(-3px,-50%) rotate(-7deg) scale(1.02); }
+  38% { top: 36%; right: 7%; transform: translate(-8px,-50%) rotate(-17deg) scale(1.06); }
+  58% { top: 22%; right: 10%; transform: translate(-16px,-50%) rotate(-36deg) scale(1.13); }
+  76% { top: 25%; right: 8%; transform: translate(-10px,-50%) rotate(-30deg) scale(1.08); }
+  100% { top: 29%; right: 2.5%; transform: translate(0,-50%) rotate(-20deg) scale(1); }
+}
+
+@keyframes football-keeper-dive-lower-miss {
+  0% { top: 50%; right: 2.5%; transform: translate(0,-50%) rotate(0deg) scale(1); }
+  18% { top: 55%; right: 4%; transform: translate(-3px,-50%) rotate(7deg) scale(1.02); }
+  38% { top: 64%; right: 7%; transform: translate(-8px,-50%) rotate(17deg) scale(1.06); }
+  58% { top: 78%; right: 10%; transform: translate(-16px,-50%) rotate(36deg) scale(1.13); }
+  76% { top: 75%; right: 8%; transform: translate(-10px,-50%) rotate(30deg) scale(1.08); }
+  100% { top: 71%; right: 2.5%; transform: translate(0,-50%) rotate(20deg) scale(1); }
+}
+
+@keyframes football-keeper-save-upper {
+  0% { top: 50%; right: 2.5%; transform: translate(0,-50%) rotate(0deg) scale(1); }
+  16% { top: 46%; right: 4%; transform: translate(-3px,-50%) rotate(-6deg) scale(1.02); }
+  34% { top: 37%; right: 7%; transform: translate(-8px,-50%) rotate(-16deg) scale(1.06); }
+  52% { top: 26%; right: 10%; transform: translate(-17px,-50%) rotate(-40deg) scale(1.16); }
+  63% { top: 29%; right: 11%; transform: translate(-19px,-50%) rotate(-45deg) scale(1.2); }
+  76% { top: 31%; right: 8%; transform: translate(-11px,-50%) rotate(-34deg) scale(1.1); }
+  90% { top: 28%; right: 5%; transform: translate(-4px,-50%) rotate(-25deg) scale(1.04); }
+  100% { top: 29%; right: 2.5%; transform: translate(0,-50%) rotate(-20deg) scale(1); }
+}
+
+@keyframes football-keeper-save-lower {
+  0% { top: 50%; right: 2.5%; transform: translate(0,-50%) rotate(0deg) scale(1); }
+  16% { top: 54%; right: 4%; transform: translate(-3px,-50%) rotate(6deg) scale(1.02); }
+  34% { top: 63%; right: 7%; transform: translate(-8px,-50%) rotate(16deg) scale(1.06); }
+  52% { top: 74%; right: 10%; transform: translate(-17px,-50%) rotate(40deg) scale(1.16); }
+  63% { top: 71%; right: 11%; transform: translate(-19px,-50%) rotate(45deg) scale(1.2); }
+  76% { top: 69%; right: 8%; transform: translate(-11px,-50%) rotate(34deg) scale(1.1); }
+  90% { top: 72%; right: 5%; transform: translate(-4px,-50%) rotate(25deg) scale(1.04); }
+  100% { top: 71%; right: 2.5%; transform: translate(0,-50%) rotate(20deg) scale(1); }
+}
+
+@keyframes football-net-hit {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(5px) scaleX(1.08); }
+  65% { transform: translateX(-2px) scaleX(.98); }
+}
+
+@media (max-width: 760px) {
+  .football-answer-value {
+    gap: 10px;
+  }
+
+  .football-whole-input input {
+    width: 66px;
+    height: 58px;
+    font-size: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .football-pitch.football-playback,
+  .football-pitch.football-playback .match-ball,
+  .football-pitch.football-playback .football-pitch-actor,
+  .football-pitch.football-playback .football-goal {
+    animation: none !important;
+  }
+}

@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import type {AdventureDefinition, AdventureId, AdventureSave, BattleState, CurriculumChapterDefinition, CurriculumGradeDefinition, CurriculumLessonDefinition, PlayerProfile, Question} from '@lernhelden/engine';
 import {applyAchievementEvent, battleAttacks, bossGate, buyItem, chapterComplete, chapterUnlocked, completeCampaignRun, completeCurriculumLesson, createAdventureSave, createBattle, createProfile, currentCampaignChapter, discardItem, equipItem, equipmentStats, nextTurn, normalizeAdventureSave, openCampaignChest, rankFor, recordMastery, resolveCorrect, resolveCounter, selectAttack, touchSave, unequipSlot, upgradeCost, upgradeItem} from '@lernhelden/engine';
 import {adventureById, adventures} from './adventures';
@@ -12,7 +12,7 @@ import {advanceBattlePhase, comicText, companionStage, companions, focusHelp, ph
 import type {BattleKind, CompanionPose, CompanionPresentation, FocusHelp} from './battlePresentation';
 import {collides, collisionRects, paintWorldScene, securePosition, worldScenes} from './worldMap';
 
-type Screen = 'home'|'profile'|'adventure'|'grade'|'chapter'|'campaign'|'inventory'|'shop'|'world'|'achievements'|'settings'|'battle'|'practice';
+type Screen = 'home'|'profile'|'adventure'|'grade'|'chapter'|'campaign'|'inventory'|'shop'|'world'|'achievements'|'settings'|'battle'|'practice'|'football';
 type Route = {screen:Screen; adventureId?:AdventureId; gradeId?:string; chapterId?:string};
 type CurriculumRun = {gradeId:string;chapterId:string;lessonId:string;modeId:string;enemyId:string};
 
@@ -22,8 +22,11 @@ const arcaneThemes:Record<AdventureId,Record<string,string>>={
   vocabulary:{'--primary':'#34d6c7','--accent':'#ffbf69','--surface':'#182343','--background':'#0b1020'},
 };
 
-function readRoute():Route {
+const FootballGame=lazy(()=>import('./components/FootballGame').then(module=>({default:module.FootballGame})));
+
+export function readRoute():Route {
   const parts=location.hash.replace(/^#\/?/,'').split('/').filter(Boolean);
+  if(parts[0]==='football')return{screen:'football'};
   if(parts[0]==='profile')return{screen:'profile'};
   if(parts[0]==='achievements')return{screen:'achievements'};
   if(parts[0]==='settings')return{screen:'settings'};
@@ -94,13 +97,14 @@ export function App(){
   const adventure=route.adventureId?adventureById[route.adventureId]:undefined;
   const save=adventure?saves[adventure.id]??createAdventureSave(adventure):undefined;
   return <div className={`app${route.screen==='world'?' world-active':''}`} style={adventure?arcaneThemes[adventure.id] as React.CSSProperties:undefined}>
-    <Header profile={profile} adventure={adventure} save={save} onLogout={()=>void logout()}/>
+    {route.screen!=='football'&&<Header profile={profile} adventure={adventure} save={save} onLogout={()=>void logout()}/>}
     {message&&<button className="notice" onClick={()=>setMessage('')}>{message}</button>}
     <main>
       {route.screen==='home'&&<PlatformHome profile={profile}/>}
       {route.screen==='profile'&&<ProfileEditor profile={profile} onSave={saveProfile}/>}
       {route.screen==='achievements'&&<Achievements profile={profile}/>}
       {route.screen==='settings'&&<Settings profile={profile} onSave={saveProfile}/>}
+      {route.screen==='football'&&<Suspense fallback={<Loading/>}><FootballGame/></Suspense>}
       {adventure&&save&&route.screen==='adventure'&&<AdventureHome adventure={adventure} save={save} profile={profile}/>}
       {adventure&&save&&route.screen==='grade'&&route.gradeId&&<CurriculumGradeScreen adventure={adventure} save={save} gradeId={route.gradeId}/>}
       {adventure&&save&&route.screen==='chapter'&&route.gradeId&&route.chapterId&&<CurriculumChapterScreen adventure={adventure} save={save} gradeId={route.gradeId} chapterId={route.chapterId}/>}
@@ -111,7 +115,7 @@ export function App(){
       {adventure&&save&&route.screen==='battle'&&<Battle adventure={adventure} initialSave={save} profile={profile} onSave={saveAdventure} onProfile={saveProfile}/>}
       {adventure&&save&&route.screen==='practice'&&<QuickPractice adventure={adventure} initialSave={save} profile={profile} onSave={saveAdventure} onProfile={saveProfile}/>}
     </main>
-    {route.screen!=='battle'&&route.screen!=='practice'&&route.screen!=='world'&&<MobileNavigation route={route} adventure={adventure} onLogout={()=>void logout()}/>}
+    {route.screen!=='battle'&&route.screen!=='practice'&&route.screen!=='world'&&route.screen!=='football'&&<MobileNavigation route={route} adventure={adventure} onLogout={()=>void logout()}/>}
   </div>;
 }
 
@@ -141,7 +145,7 @@ function MobileNavigation({route,adventure,onLogout}:{route:Route;adventure?:Adv
   </>;
 }
 
-function PlatformHome({profile}:{profile:PlayerProfile}){return <div className="page home-page"><section className="platform-hero"><div><p className="eyebrow">Dein großes Lern-Rollenspiel</p><h1>Willkommen, {profile.displayName}!</h1><p>Ein Held, eine Spielwelt und immer neue Lernabenteuer.</p></div><Avatar profile={profile} size={160}/></section><h2>Wähle dein Abenteuer</h2><section className="adventure-grid">{adventures.filter(item=>item.status!=='hidden').map(adventure=><article className="adventure-card" style={{'--card-color':arcaneThemes[adventure.id]['--primary']} as React.CSSProperties} key={adventure.id}><Sprite sprite={adventure.enemies[adventure.enemies.length-1].sprite} size={100}/><span className="status">{adventure.status==='beta'?'Beta':'Bereit'}</span><h2>{adventure.title}</h2><p>{adventure.subtitle}</p><button onClick={()=>go(`/adventure/${adventure.id}`)}>Abenteuer betreten <Icon name="arrow-right" size={18}/></button></article>)}</section></div>}
+export function PlatformHome({profile}:{profile:PlayerProfile}){return <div className="page home-page"><section className="platform-hero"><div><p className="eyebrow">Dein großes Lern-Rollenspiel</p><h1>Willkommen, {profile.displayName}!</h1><p>Ein Held, eine Spielwelt und immer neue Lernabenteuer.</p></div><Avatar profile={profile} size={160}/></section><h2>Wähle dein Abenteuer</h2><section className="adventure-grid">{adventures.filter(item=>item.status!=='hidden').map(adventure=><article className="adventure-card" style={{'--card-color':arcaneThemes[adventure.id]['--primary']} as React.CSSProperties} key={adventure.id}><Sprite sprite={adventure.enemies[adventure.enemies.length-1].sprite} size={100}/><span className="status">{adventure.status==='beta'?'Beta':'Bereit'}</span><h2>{adventure.title}</h2><p>{adventure.subtitle}</p><button onClick={()=>go(`/adventure/${adventure.id}`)}>Abenteuer betreten <Icon name="arrow-right" size={18}/></button></article>)}<article className="adventure-card football-beta-card"><div className="football-beta-art" aria-hidden="true"><div className="football-beta-pitch"><span className="football-beta-ball"/></div></div><span className="status">Beta</span><h2>Mathe Fußball</h2><p>3 gegen 3 spielen, Brüche lösen und dein Team ausstatten.</p><button onClick={()=>go('/football')}>Match starten <Icon name="arrow-right" size={18}/></button></article></section></div>}
 
 function ProfileEditor({profile,onSave,firstRun=false}:{profile:PlayerProfile;onSave:(value:PlayerProfile)=>Promise<void>;firstRun?:boolean}){const [name,setName]=useState(profile.displayName);const [avatar,setAvatar]=useState(Number(profile.avatarPresetId.split('-')[1]||1)-1);return <div className="page narrow"><p className="eyebrow">{firstRun?'Dein erster Schritt':'Gemeinsames Profil'}</p><h1>Gestalte deinen Lernhelden</h1><label className="field">Heldenname<input maxLength={24} value={name} onChange={event=>setName(event.target.value)}/></label><div className="avatar-picker">{Array.from({length:6},(_,index)=><button key={index} className={avatar===index?'selected':''} onClick={()=>setAvatar(index)}><Sprite sprite={avatarSprite(index)} size={88}/><span>Vorlage {index+1}</span></button>)}</div><button disabled={!name.trim()} onClick={()=>void onSave({...profile,displayName:name.trim(),avatarPresetId:`avatar-${avatar+1}`,clientUpdatedAt:Date.now()}).then(()=>go('/home'))}>Profil speichern</button></div>}
 

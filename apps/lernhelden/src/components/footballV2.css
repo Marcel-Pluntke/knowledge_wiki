@@ -1,0 +1,339 @@
+.football-mode-tip {
+  margin: -8px 0 18px;
+  color: #9eb0a4;
+  font-size: 13px;
+}
+
+.football-mode-grid button {
+  position: relative;
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.football-mode-grid button:hover {
+  transform: translateY(-2px);
+}
+
+.football-mode-grid button::after {
+  content: 'Direkt starten';
+  margin-top: 4px;
+  color: #71e596;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.school-expression,
+.school-expression > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.school-expression > span {
+  gap: .08em;
+}
+
+.school-expression-text {
+  display: inline-flex;
+  align-items: center;
+  white-space: pre;
+  line-height: 1;
+}
+
+.school-mixed-fraction {
+  display: inline-flex;
+  align-items: center;
+  gap: .12em;
+  margin: 0 .08em;
+}
+
+.school-whole {
+  align-self: center;
+  line-height: 1;
+}
+
+.school-fraction {
+  min-width: 1.25em;
+  display: inline-grid;
+  grid-template-rows: minmax(.8em, auto) 3px minmax(.8em, auto);
+  align-items: center;
+  justify-items: stretch;
+  gap: .08em;
+  line-height: .9;
+  font-size: .82em;
+  vertical-align: middle;
+}
+
+.school-fraction > span:not(.school-fraction-line) {
+  display: block;
+  min-width: 100%;
+  padding: 0 .12em;
+  text-align: center;
+}
+
+.school-fraction-line {
+  width: 100%;
+  min-width: 1.25em;
+  height: 3px;
+  border-radius: 3px;
+  background: currentColor;
+}
+
+.football-question {
+  min-height: 142px;
+  padding: 24px 0 28px;
+}
+
+.football-tactic {
+  margin: 0 auto 26px;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 18px;
+  background: rgba(0,0,0,.13);
+}
+
+.football-tactic-copy {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 12px;
+}
+
+.football-tactic-copy small {
+  color: #78dd98;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.football-tactic-copy strong {
+  font-size: 16px;
+}
+
+.football-tactic.shot {
+  border-color: rgba(255,218,95,.22);
+  background: rgba(255,199,61,.055);
+}
+
+.football-tactic.shot .football-tactic-copy small {
+  color: #ffdc73;
+}
+
+.football-tactic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.football-tactic-grid button {
+  min-height: 68px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 14px;
+  color: #eef8f1;
+  background: rgba(255,255,255,.045);
+  box-shadow: none;
+  text-align: left;
+}
+
+.football-tactic-grid button:hover:not(:disabled),
+.football-tactic-grid button.selected {
+  border-color: rgba(75,224,125,.75);
+  background: rgba(55,200,106,.16);
+}
+
+.football-tactic.shot .football-tactic-grid button:hover:not(:disabled),
+.football-tactic.shot .football-tactic-grid button.selected {
+  border-color: rgba(255,217,96,.72);
+  background: rgba(255,201,68,.11);
+}
+
+.football-tactic-grid button:disabled {
+  opacity: .78;
+}
+
+.football-tactic-grid button > span:last-child {
+  display: grid;
+  gap: 3px;
+}
+
+.football-tactic-grid button strong {
+  font-size: 14px;
+}
+
+.football-tactic-grid button small {
+  color: #93a79a;
+  font-size: 11px;
+}
+
+.football-direction-mark {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: #d9f6e2;
+  background: rgba(91,218,132,.14);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.football-tactic.shot .football-direction-mark {
+  color: #ffe49a;
+  background: rgba(255,207,70,.12);
+}
+
+.football-answer {
+  padding-top: 2px;
+}
+
+.football-action-hint {
+  margin: 12px 0 0;
+  color: #91a59a;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.football-pitch-actor {
+  position: absolute;
+  left: 68%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+  border: 3px solid rgba(255,255,255,.8);
+  border-radius: 50%;
+  color: #fff;
+  background: #c84b45;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 5px 14px rgba(0,0,0,.25);
+  transition: top .35s ease, transform .25s ease;
+}
+
+.football-pitch-actor span {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .02em;
+}
+
+.football-pitch-actor.upper {
+  top: 29%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+}
+
+.football-pitch-actor.lower {
+  top: 71%;
+  transform: translate(-50%, -50%) rotate(8deg);
+}
+
+.football-keeper {
+  left: auto;
+  right: 2.5%;
+  width: 48px;
+  height: 48px;
+  background: #e7a42f;
+  transform: translate(0, -50%);
+}
+
+.football-keeper.upper {
+  transform: translate(0, -50%) rotate(-20deg);
+}
+
+.football-keeper.lower {
+  transform: translate(0, -50%) rotate(20deg);
+}
+
+.match-ball {
+  transition: left .45s cubic-bezier(.2,.75,.2,1), top .3s ease, transform .25s ease;
+}
+
+.match-ball.choice-upper {
+  top: 36%;
+}
+
+.match-ball.choice-lower {
+  top: 64%;
+}
+
+.football-pitch.play-shot {
+  box-shadow: inset -80px 0 80px rgba(255,216,85,.05), 0 18px 40px rgba(0,0,0,.2);
+}
+
+@media (max-width: 760px) {
+  .football-mode-tip {
+    margin-left: 2px;
+  }
+
+  .football-question {
+    min-height: 126px;
+    padding: 18px 0 22px;
+    font-size: clamp(32px, 11vw, 48px);
+  }
+
+  .school-fraction {
+    grid-template-rows: minmax(.82em, auto) 3px minmax(.82em, auto);
+  }
+
+  .football-tactic {
+    padding: 14px;
+    margin-bottom: 20px;
+  }
+
+  .football-tactic-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .football-tactic-grid button {
+    min-height: 70px;
+    padding: 9px 10px;
+    gap: 8px;
+  }
+
+  .football-direction-mark {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    font-size: 18px;
+  }
+
+  .football-tactic-grid button small {
+    display: none;
+  }
+
+  .football-pitch-actor {
+    width: 38px;
+    height: 38px;
+  }
+
+  .football-keeper {
+    width: 42px;
+    height: 42px;
+  }
+}
+
+@media (max-width: 390px) {
+  .football-tactic-grid button {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    padding: 8px;
+  }
+
+  .football-direction-mark {
+    width: 32px;
+    height: 32px;
+  }
+
+  .football-tactic-grid button strong {
+    font-size: 12px;
+  }
+}
