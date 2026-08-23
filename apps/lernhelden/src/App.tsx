@@ -12,7 +12,7 @@ import {advanceBattlePhase, comicText, companionStage, companions, focusHelp, ph
 import type {BattleKind, CompanionPose, CompanionPresentation, FocusHelp} from './battlePresentation';
 import {collides, collisionRects, paintWorldScene, securePosition, worldScenes} from './worldMap';
 
-type Screen = 'home'|'profile'|'adventure'|'grade'|'chapter'|'campaign'|'inventory'|'shop'|'world'|'achievements'|'settings'|'battle';
+type Screen = 'home'|'profile'|'adventure'|'grade'|'chapter'|'campaign'|'inventory'|'shop'|'world'|'achievements'|'settings'|'battle'|'practice';
 type Route = {screen:Screen; adventureId?:AdventureId; gradeId?:string; chapterId?:string};
 type CurriculumRun = {gradeId:string;chapterId:string;lessonId:string;modeId:string;enemyId:string};
 
@@ -109,8 +109,9 @@ export function App(){
       {adventure&&save&&route.screen==='shop'&&<ShopScreen adventure={adventure} save={save} onSave={saveAdventure} onEvent={type=>dispatchEvent(adventure,type)} navigate={go}/>}
       {adventure&&save&&route.screen==='world'&&<World adventure={adventure} save={save} profile={profile} onSave={saveAdventure}/>}
       {adventure&&save&&route.screen==='battle'&&<Battle adventure={adventure} initialSave={save} profile={profile} onSave={saveAdventure} onProfile={saveProfile}/>}
+      {adventure&&save&&route.screen==='practice'&&<QuickPractice adventure={adventure} initialSave={save} profile={profile} onSave={saveAdventure} onProfile={saveProfile}/>}
     </main>
-    {route.screen!=='battle'&&route.screen!=='world'&&<MobileNavigation route={route} adventure={adventure} onLogout={()=>void logout()}/>}
+    {route.screen!=='battle'&&route.screen!=='practice'&&route.screen!=='world'&&<MobileNavigation route={route} adventure={adventure} onLogout={()=>void logout()}/>}
   </div>;
 }
 
@@ -155,13 +156,13 @@ function FreeAdventureSection({adventure,secondary=false}:{adventure:AdventureDe
   return <section className="free-adventure"><div className="free-adventure-heading"><div><p className="eyebrow">Freies Abenteuer</p><h2>Trainiere auf deine Art</h2><p>Kampagne, freie Wortkämpfe und deine Ausrüstung bleiben jederzeit erreichbar.</p></div><button className="campaign-entry compact" onClick={()=>go(`/adventure/${adventure.id}/campaign`)}><span><small>Deine große Reise</small><strong>24-Wochen-Kampagne</strong></span><Icon name="arrow-right"/></button></div>{modes}{actions}</section>;
 }
 
-function launchCurriculumLesson(adventure:AdventureDefinition,grade:CurriculumGradeDefinition,chapter:CurriculumChapterDefinition,lesson:CurriculumLessonDefinition){
+function launchCurriculumLesson(adventure:AdventureDefinition,grade:CurriculumGradeDefinition,chapter:CurriculumChapterDefinition,lesson:CurriculumLessonDefinition,presentation:'battle'|'quick'='battle'){
   const run:CurriculumRun={gradeId:grade.id,chapterId:chapter.id,lessonId:lesson.id,modeId:lesson.modeId,enemyId:lesson.enemyId};
   sessionStorage.setItem(`lernhelden:mode:${adventure.id}`,lesson.modeId);
   sessionStorage.setItem(curriculumRunKey(adventure.id),JSON.stringify(run));
   sessionStorage.removeItem(`lernhelden:campaign:${adventure.id}`);
   sessionStorage.removeItem(practiceVariantKey(adventure.id));
-  go(`/adventure/${adventure.id}/battle`);
+  go(`/adventure/${adventure.id}/${presentation==='quick'?'practice':'battle'}`);
 }
 
 export function AdventureHome({adventure,save,profile}:{adventure:AdventureDefinition;save:AdventureSave;profile:PlayerProfile}){
@@ -182,7 +183,7 @@ export function CurriculumChapterScreen({adventure,save,gradeId,chapterId}:{adve
   if(!grade||!chapter)return <div className="page"><BackButton to={`/adventure/${adventure.id}`} label="Zurück"/><h1>Kapitel nicht gefunden</h1></div>;
   const completed=new Set(save.curriculum.completedLessonIds);
   const finished=chapter.lessons.filter(lesson=>completed.has(lesson.id)).length;
-  return <div className="page curriculum-page"><BackButton to={`/adventure/${adventure.id}/grade/${grade.id}`} label={grade.title}/><section className="chapter-hero"><div><p className="eyebrow">Kapitel {chapter.index} · {grade.title}</p><h1>{chapter.title}</h1><p>{chapter.description}</p></div><div className="chapter-ring"><strong>{finished}</strong><span>von {chapter.lessons.length}</span></div></section><section className="lesson-path">{chapter.lessons.map((lesson,index)=>{const done=completed.has(lesson.id),missing=(lesson.requiredLessonIds??[]).filter(id=>!completed.has(id)),locked=lesson.status!=='released'||missing.length>0;return <article className={`lesson-card ${done?'completed':''} ${locked?'locked':''}`} key={lesson.id}><div className="lesson-node">{done?<Icon name="check" size={25}/>:locked?<Icon name="lock" size={22}/>:index+1}</div><div className="lesson-content"><span>{done?'Geschafft':locked?'Noch gesperrt':`Übung ${index+1}`}</span><h2>{lesson.title}</h2><p>{lesson.description}</p>{missing.length>0&&<small>Gewinne zuerst Buchstabieren, Zahlen und Teacher-Sätze.</small>}</div><button disabled={locked} onClick={()=>!locked&&launchCurriculumLesson(adventure,grade,chapter,lesson)}>{done?'Erneut kämpfen':'Wortkampf starten'} {!locked&&<Icon name="arrow-right" size={17}/>}</button></article>})}</section></div>;
+  return <div className="page curriculum-page"><BackButton to={`/adventure/${adventure.id}/grade/${grade.id}`} label={grade.title}/><section className="chapter-hero"><div><p className="eyebrow">Kapitel {chapter.index} · {grade.title}</p><h1>{chapter.title}</h1><p>{chapter.description}</p></div><div className="chapter-ring"><strong>{finished}</strong><span>von {chapter.lessons.length}</span></div></section><section className="lesson-path">{chapter.lessons.map((lesson,index)=>{const done=completed.has(lesson.id),missing=(lesson.requiredLessonIds??[]).filter(id=>!completed.has(id)),locked=lesson.status!=='released'||missing.length>0,quickEligible=adventure.id==='vocabulary'&&grade.id==='grade-5'&&chapter.id==='basics'&&['spelling','numbers-1-50','teacher-says'].includes(lesson.id);return <article className={`lesson-card ${done?'completed':''} ${locked?'locked':''}`} key={lesson.id}><div className="lesson-node">{done?<Icon name="check" size={25}/>:locked?<Icon name="lock" size={22}/>:index+1}</div><div className="lesson-content"><span>{done?'Geschafft':locked?'Noch gesperrt':`Übung ${index+1}`}</span><h2>{lesson.title}</h2><p>{lesson.description}</p>{missing.length>0&&<small>Gewinne zuerst Buchstabieren, Zahlen und Teacher-Sätze.</small>}</div><div className="lesson-actions"><button disabled={locked} onClick={()=>!locked&&launchCurriculumLesson(adventure,grade,chapter,lesson)}>{done?'Erneut kämpfen':'Wortkampf starten'} {!locked&&<Icon name="arrow-right" size={17}/>}</button>{quickEligible&&<button className="secondary" disabled={locked} onClick={()=>!locked&&launchCurriculumLesson(adventure,grade,chapter,lesson,'quick')}>{done?'Schnell üben':'Schnellübung starten'} {!locked&&<Icon name="arrow-right" size={17}/>}</button>}</div></article>})}</section></div>;
 }
 
 export function Campaign({adventure,save,onSave}:{adventure:AdventureDefinition;save:AdventureSave;onSave:(save:AdventureSave)=>Promise<void>}){
@@ -225,6 +226,100 @@ function AnswerReview({result}:{result:AnswerResult}){
   return <div className={`answer-review ${result.correct?'correct':'wrong'}`} role="region" aria-label="Antwortauswertung">
     <div><span>Deine Antwort</span><strong>{result.given}</strong></div>
     <div><span>Richtige Lösung</span><strong>{result.expected}</strong></div>
+  </div>;
+}
+
+const quickPracticeLength=10;
+
+export function QuickPractice({adventure,initialSave,profile,onSave,onProfile}:{adventure:AdventureDefinition;initialSave:AdventureSave;profile:PlayerProfile;onSave:(save:AdventureSave)=>Promise<void>;onProfile:(profile:PlayerProfile)=>Promise<void>}){
+  const run=readSession<CurriculumRun>(curriculumRunKey(adventure.id));
+  const grade=run?adventure.curriculum?.grades.find(candidate=>candidate.id===run.gradeId):undefined;
+  const chapter=grade?.chapters.find(candidate=>candidate.id===run?.chapterId);
+  const lesson=chapter?.lessons.find(candidate=>candidate.id===run?.lessonId);
+  const returnPath=run?`/adventure/${adventure.id}/grade/${run.gradeId}/chapter/${run.chapterId}`:`/adventure/${adventure.id}`;
+  const stats=equipmentStats(initialSave,adventure);
+  const createQuestion=(sequence:number,save:AdventureSave,previousLearningKey?:string)=>adventure.questionProvider.next({modeId:run?.modeId??adventure.modes[0].id,sequence,random:Math.random,mastery:save.masteryByKey,previousLearningKey});
+  const [save,setSave]=useState(initialSave);
+  const [currentProfile,setCurrentProfile]=useState(profile);
+  const [sequence,setSequence]=useState(1);
+  const [question,setQuestion]=useState<Question>(()=>createQuestion(1,initialSave));
+  const [answer,setAnswer]=useState('');
+  const [answerResult,setAnswerResult]=useState<AnswerResult|null>(null);
+  const [correctCount,setCorrectCount]=useState(0);
+  const [streak,setStreak]=useState(0);
+  const [finished,setFinished]=useState(false);
+  const [busy,setBusy]=useState(false);
+  const inputRef=useRef<HTMLInputElement>(null);
+  const lastLearningKey=useRef<string|undefined>(question.learningKey);
+
+  useEffect(()=>{if(!answerResult&&!finished)inputRef.current?.focus()},[answerResult,finished,question.id]);
+
+  if(!run||!grade||!chapter||!lesson)return <div className="page quick-practice-page"><BackButton to={returnPath} label="Zurück"/><section className="quick-empty"><h1>Schnellübung nicht gefunden</h1><p>Öffne die Übung erneut über den Klasse-5-Bereich.</p><button onClick={()=>go(returnPath)}>Zum Lehrplan</button></section></div>;
+
+  const submit=async()=>{
+    if(!answer.trim()||answerResult||busy)return;
+    const correct=adventure.questionProvider.evaluate(question,answer);
+    const nextStreak=correct?streak+1:0;
+    let nextSave=recordMastery(correct?{
+      ...save,
+      currency:save.currency+2+Math.floor(stats.luck/4),
+      xp:save.xp+1,
+      completed:save.completed+1,
+      stats:{...save.stats,correct:save.stats.correct+1,bestStreak:Math.max(save.stats.bestStreak,nextStreak)},
+    }:{...save,stats:{...save.stats,wrong:save.stats.wrong+1}},question,correct);
+    if(sequence===quickPracticeLength)nextSave=completeCurriculumLesson(nextSave,lesson.id);
+    const result={given:answer,expected:question.answer,correct};
+    setAnswerResult(result);
+    setCorrectCount(current=>current+(correct?1:0));
+    setStreak(nextStreak);
+    setSave(nextSave);
+    setBusy(true);
+    try{
+      await onSave(nextSave);
+      const nextProfile=applyAchievementEvent(currentProfile,adventure,{type:correct?'answer-correct':'answer-wrong',adventureId:adventure.id});
+      setCurrentProfile(nextProfile);
+      await onProfile(nextProfile);
+    }finally{setBusy(false)}
+  };
+  const advance=()=>{
+    if(!answerResult||busy)return;
+    if(sequence===quickPracticeLength){setFinished(true);return}
+    const nextSequence=sequence+1;
+    const nextQuestion=createQuestion(nextSequence,save,lastLearningKey.current);
+    setSequence(nextSequence);
+    setQuestion(nextQuestion);
+    lastLearningKey.current=nextQuestion.learningKey;
+    setAnswer('');
+    setAnswerResult(null);
+  };
+  const restart=()=>{
+    const first=createQuestion(1,save);
+    setSequence(1);
+    setQuestion(first);
+    lastLearningKey.current=first.learningKey;
+    setAnswer('');
+    setAnswerResult(null);
+    setCorrectCount(0);
+    setStreak(0);
+    setFinished(false);
+    setBusy(false);
+  };
+
+  if(finished)return <div className="page quick-practice-page"><section className="quick-summary"><div className="quick-summary-mark" aria-hidden="true"><Icon name="check" size={42}/></div><p className="eyebrow">Schnellübung abgeschlossen</p><h1>{lesson.title}</h1><strong>{correctCount} von {quickPracticeLength} richtig</strong><p>Dein Lernstand wurde gespeichert. Du kannst die Übung direkt wiederholen oder zum Kapitel zurückkehren.</p><div><button onClick={restart}>Noch einmal üben</button><button className="secondary" onClick={()=>go(returnPath)}>Zurück zum Kapitel</button></div></section></div>;
+
+  const progress=Math.round(sequence/quickPracticeLength*100);
+  return <div className="page quick-practice-page">
+    <header className="quick-header"><button className="quick-close" aria-label="Schnellübung verlassen" onClick={()=>go(returnPath)}><Icon name="close" size={20}/></button><div className="quick-progress"><div role="progressbar" aria-label="Fortschritt der Schnellübung" aria-valuemin={0} aria-valuemax={quickPracticeLength} aria-valuenow={sequence}><i style={{width:`${progress}%`}}/></div><span>Aufgabe {sequence} von {quickPracticeLength}</span></div><div className="quick-score"><strong>{correctCount}</strong><span>richtig</span></div></header>
+    <div className="quick-shell">
+      <section className="quick-question-card" aria-labelledby="quick-question-heading">
+        <p className="quick-category">{question.category}</p>
+        <h1 id="quick-question-heading">{question.prompt}</h1>
+        {question.inputKind==='choice'?<div className="quick-choice-grid">{question.choices?.map((choice,index)=>{const isExpected=choice===question.answer,isSelected=choice===answer;return <button key={choice} disabled={Boolean(answerResult)||busy} className={`${isSelected?'selected ':''}${answerResult&&isExpected?'correct ':''}${answerResult&&!answerResult.correct&&isSelected?'wrong':''}`} onClick={()=>setAnswer(choice)}><span>{index+1}</span>{choice}</button>})}</div>:<label className="quick-write"><span>Deine Antwort</span><input ref={inputRef} disabled={Boolean(answerResult)||busy} inputMode="text" autoCapitalize="none" autoComplete="off" spellCheck={false} value={answer} onChange={event=>setAnswer(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();if(answerResult)advance();else void submit()}}} placeholder="Antwort eingeben …"/></label>}
+      </section>
+    </div>
+    <footer className={`quick-footer ${answerResult?(answerResult.correct?'correct':'wrong'):''}`} aria-live="polite">
+      <div className="quick-footer-inner">{answerResult?<><div className="quick-feedback"><div className="quick-feedback-icon"><Icon name={answerResult.correct?'check':'close'} size={24}/></div><div><strong>{answerResult.correct?'Richtig!':'Noch nicht.'}</strong>{!answerResult.correct&&<p>Deine Antwort: <b>{answerResult.given}</b> · Richtige Lösung: <b>{answerResult.expected}</b></p>}</div></div><button disabled={busy} onClick={advance}>{sequence===quickPracticeLength?'Ergebnis ansehen':'Weiter'}</button></>:<><p>Wähle oder schreibe die passende Antwort.</p><button disabled={!answer.trim()||busy} onClick={()=>void submit()}>Antwort prüfen</button></>}</div>
+    </footer>
   </div>;
 }
 

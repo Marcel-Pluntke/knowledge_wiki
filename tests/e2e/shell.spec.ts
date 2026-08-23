@@ -124,3 +124,21 @@ test('opens the grade-five vocabulary curriculum and starts a lesson battle',asy
   await page.getByRole('button',{name:/Funkenangriff/}).click();
   await expect(page.getByRole('textbox')).toHaveAttribute('inputmode','text');
 });
+
+test('runs grade-five quick practice without battle UI',async({page})=>{
+  await page.goto('/#/adventure/vocabulary/grade/grade-5/chapter/basics');
+  const teacher=page.getByRole('heading',{name:'What Teachers Often Say'}).locator('..').locator('..');
+  await expect(teacher.getByRole('button',{name:/Schnellübung starten/})).toBeVisible();
+  await teacher.getByRole('button',{name:/Schnellübung starten/}).click();
+  await expect(page).toHaveURL(/#\/adventure\/vocabulary\/practice$/);
+  await expect(page.getByText('Aufgabe 1 von 10')).toBeVisible();
+  await expect(page.locator('.battle-stage')).toHaveCount(0);
+  await page.getByRole('textbox').fill('chair');
+  await page.getByRole('button',{name:'Antwort prüfen'}).click();
+  await expect(page.getByText('Noch nicht.')).toBeVisible();
+  await expect(page.getByText(/Richtige Lösung:/)).toHaveText(/Deine Antwort: chair · Richtige Lösung: [A-Za-z]+$/);
+  await page.getByRole('button',{name:'Weiter'}).click();
+  await expect(page.getByText('Aufgabe 2 von 10')).toBeVisible();
+  await expect(page.locator('.quick-choice-grid button')).toHaveCount(4);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});

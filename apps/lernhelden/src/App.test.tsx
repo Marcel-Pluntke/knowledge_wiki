@@ -5,7 +5,7 @@ import type {AdventureDefinition} from '@lernhelden/engine';
 import {fractionsAdventure} from './adventures/fractions';
 import {vocabularyAdventure} from './adventures/vocabulary';
 import {curriculumModeIds} from './adventures/vocabulary-curriculum';
-import {AdventureHome,Battle,Campaign,CurriculumChapterScreen,CurriculumGradeScreen,World} from './App';
+import {AdventureHome,Battle,Campaign,CurriculumChapterScreen,CurriculumGradeScreen,QuickPractice,World} from './App';
 import {worldScenes} from './worldMap';
 
 const beginBattle=()=>fireEvent.click(screen.getByRole('button',{name:'Überspringen'}));
@@ -248,6 +248,66 @@ describe('Campaign',()=>{
     const unlocked=screen.getByRole('heading',{name:'Gemischte Wiederholung'}).closest('article')!;
     fireEvent.click(within(unlocked).getByRole('button',{name:/Wortkampf starten/}));
     expect(JSON.parse(sessionStorage.getItem('lernhelden:curriculum:vocabulary')!)).toMatchObject({gradeId:'grade-5',chapterId:'basics',lessonId:'basics-mix',modeId:curriculumModeIds.mix});
+  });
+
+  it('offers quick practice beside battle for the three basics lessons only',()=>{
+    const save=createAdventureSave(vocabularyAdventure);
+    render(<CurriculumChapterScreen adventure={vocabularyAdventure} save={save} gradeId="grade-5" chapterId="basics"/>);
+    for(const title of ['Buchstabieren','Zahlen 1–50','What Teachers Often Say']){
+      const card=screen.getByRole('heading',{name:title}).closest('article')!;
+      expect(within(card).getByRole('button',{name:/Wortkampf starten/})).toBeEnabled();
+      expect(within(card).getByRole('button',{name:/Schnellübung starten/})).toBeEnabled();
+    }
+    const mixCard=screen.getByRole('heading',{name:'Gemischte Wiederholung'}).closest('article')!;
+    expect(within(mixCard).queryByRole('button',{name:/Schnell/})).not.toBeInTheDocument();
+    const teacherCard=screen.getByRole('heading',{name:'What Teachers Often Say'}).closest('article')!;
+    fireEvent.click(within(teacherCard).getByRole('button',{name:/Schnellübung starten/}));
+    expect(location.hash).toBe('#/adventure/vocabulary/practice');
+    expect(JSON.parse(sessionStorage.getItem('lernhelden:curriculum:vocabulary')!)).toMatchObject({gradeId:'grade-5',chapterId:'basics',lessonId:'teacher-says',modeId:curriculumModeIds.teachers});
+  });
+
+  it('shows immediate quick-practice feedback and keeps teacher sentences in choice tasks',async()=>{
+    vi.spyOn(Math,'random').mockReturnValue(0);
+    const save=createAdventureSave(vocabularyAdventure),onSave=vi.fn().mockResolvedValue(undefined);
+    sessionStorage.setItem('lernhelden:curriculum:vocabulary',JSON.stringify({gradeId:'grade-5',chapterId:'basics',lessonId:'teacher-says',modeId:curriculumModeIds.teachers,enemyId:'curriculum-classroom-skeleton'}));
+    render(<QuickPractice adventure={vocabularyAdventure} initialSave={save} profile={createProfile('Testheld')} onSave={onSave} onProfile={vi.fn().mockResolvedValue(undefined)}/>);
+    expect(screen.getByText('Aufgabe 1 von 10')).toBeVisible();
+    const input=screen.getByRole('textbox');
+    fireEvent.change(input,{target:{value:'chair'}});
+    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Antwort prüfen'}));await Promise.resolve()});
+    expect(input).toBeDisabled();
+    expect(screen.getByText('Noch nicht.')).toBeVisible();
+    expect(screen.getByText(/Deine Antwort:/)).toHaveTextContent('chair');
+    expect(screen.getByText(/Richtige Lösung:/)).toHaveTextContent('school');
+    expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({currency:0,xp:0,stats:expect.objectContaining({wrong:1}),curriculum:{completedLessonIds:[]}}));
+    fireEvent.click(screen.getByRole('button',{name:'Weiter'}));
+    expect(screen.getByText('Aufgabe 2 von 10')).toBeVisible();
+    expect(screen.getByRole('heading',{name:/Wie heißt/})).toBeVisible();
+    expect(screen.getAllByRole('button').some(button=>(button.textContent??'').split(/\s+/).length>3)).toBe(true);
+  });
+
+  it('completes ten quick questions with answer rewards but no enemy bonus',async()=>{
+    const contexts:Array<{sequence:number;previousLearningKey?:string}>=[];
+    const quickAdventure:AdventureDefinition={...vocabularyAdventure,questionProvider:{
+      next:context=>{contexts.push({sequence:context.sequence,previousLearningKey:context.previousLearningKey});return{id:`quick-${context.sequence}`,inputKind:'text',prompt:`Aufgabe ${context.sequence}`,answer:`answer-${context.sequence}`,category:'Test · Schreiben',learningKey:`quick-key-${context.sequence}`,hintSteps:[]}},
+      evaluate:(question,answer)=>question.answer===answer,
+    }};
+    const save=createAdventureSave(quickAdventure),onSave=vi.fn().mockResolvedValue(undefined);
+    sessionStorage.setItem('lernhelden:curriculum:vocabulary',JSON.stringify({gradeId:'grade-5',chapterId:'basics',lessonId:'spelling',modeId:curriculumModeIds.spelling,enemyId:'curriculum-spelling-slime'}));
+    render(<QuickPractice adventure={quickAdventure} initialSave={save} profile={createProfile('Testheld')} onSave={onSave} onProfile={vi.fn().mockResolvedValue(undefined)}/>);
+    for(let index=1;index<=10;index++){
+      fireEvent.change(screen.getByRole('textbox'),{target:{value:`answer-${index}`}});
+      await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Antwort prüfen'}));await Promise.resolve()});
+      const latest=onSave.mock.calls.at(-1)?.[0];
+      expect(latest.curriculum.completedLessonIds).toEqual(index===10?['spelling']:[]);
+      if(index<10)fireEvent.click(screen.getByRole('button',{name:'Weiter'}));
+    }
+    expect(onSave).toHaveBeenCalledTimes(10);
+    expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({currency:20,xp:10,completed:10,clearedEnemyIds:[],stats:expect.objectContaining({correct:10,bestStreak:10}),curriculum:{completedLessonIds:['spelling']}}));
+    expect(contexts.slice(1).every((context,index)=>context.previousLearningKey===`quick-key-${index+1}`)).toBe(true);
+    fireEvent.click(screen.getByRole('button',{name:'Ergebnis ansehen'}));
+    expect(screen.getByText('10 von 10 richtig')).toBeVisible();
+    expect(screen.getByRole('button',{name:'Noch einmal üben'})).toBeVisible();
   });
 
   it('records a curriculum victory and uses a text keyboard for written English',async()=>{
