@@ -154,13 +154,16 @@ function itemPool(context: QuestionContext) {
   return pools[(['spelling','numbers','teachers'] as const)[topic]];
 }
 
+const teacherWritingItems=spellingItems.filter(item=>item.category==='Schule'&&/^[A-Za-z]+$/.test(item.en));
+
 export function vocabularyCurriculumQuestion(context: QuestionContext): Question {
-  const pool=itemPool(context);
-  const available=withoutImmediateRepeat(dueItems(pool,context.mastery),context,pool);
-  const item=available[Math.min(available.length-1,Math.floor(context.random()*available.length))];
   const taskType=Math.max(0,context.sequence-1)%3;
   const englishToGerman=taskType===2;
   const writing=taskType===0;
+  const lessonPool=itemPool(context);
+  const pool=writing&&lessonPool===teacherItems?teacherWritingItems:lessonPool;
+  const available=withoutImmediateRepeat(dueItems(pool,context.mastery),context,pool);
+  const item=available[Math.min(available.length-1,Math.floor(context.random()*available.length))];
   const answer=englishToGerman?item.de:item.en;
   const targetKey=englishToGerman?'de':'en';
   const wrong=shuffled(pool.filter(candidate=>candidate.id!==item.id),context.random).slice(0,3).map(candidate=>candidate[targetKey]);

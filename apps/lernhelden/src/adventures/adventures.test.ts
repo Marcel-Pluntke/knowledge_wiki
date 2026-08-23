@@ -96,6 +96,20 @@ describe('adventure contract',()=>{
     }
   });
 
+  it('uses single school words for writing and full sentences only for choices in teacher practice',()=>{
+    const vocabulary=adventures.find(adventure=>adventure.id==='vocabulary')!;
+    const writing=vocabulary.questionProvider.next({modeId:curriculumModeIds.teachers,sequence:1,random:()=>.9});
+    const sentenceChoice=vocabulary.questionProvider.next({modeId:curriculumModeIds.teachers,sequence:2,random:()=>0});
+    const mixedTeacherWriting=vocabulary.questionProvider.next({modeId:curriculumModeIds.mix,sequence:7,random:()=>.9});
+    expect(writing).toMatchObject({inputKind:'text'});
+    expect(writing.answer).toMatch(/^[A-Za-z]+$/);
+    expect(writing.category).toContain('Schule · Schreiben');
+    expect(sentenceChoice).toMatchObject({inputKind:'choice'});
+    expect(sentenceChoice.answer.split(/\s+/).length).toBeGreaterThan(2);
+    expect(sentenceChoice.category).toContain('What Teachers Often Say');
+    expect(mixedTeacherWriting.answer).toMatch(/^[A-Za-z]+$/);
+  });
+
   it('evaluates typed curriculum answers in a learner-friendly way',()=>{
     const vocabulary=adventures.find(adventure=>adventure.id==='vocabulary')!;
     const pupilIndex=spellingItems.findIndex(item=>item.en==='pupil');
@@ -105,7 +119,7 @@ describe('adventure contract',()=>{
     const number=vocabulary.questionProvider.next({modeId:curriculumModeIds.numbers,sequence:1,random:()=>.41});
     expect(number.answer).toBe('twenty-one');
     expect(vocabulary.questionProvider.evaluate(number,'Twenty one')).toBe(true);
-    const teacher=vocabulary.questionProvider.next({modeId:curriculumModeIds.teachers,sequence:1,random:()=>.72});
+    const teacher=vocabulary.questionProvider.next({modeId:curriculumModeIds.teachers,sequence:2,random:()=>.72});
     expect(teacher.answer).toContain('bank neighbour');
     expect(vocabulary.questionProvider.evaluate(teacher,"compare your results to your bank neighbor's")).toBe(true);
   });
