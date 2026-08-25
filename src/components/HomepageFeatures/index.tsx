@@ -42,6 +42,16 @@ const FeatureList: FeatureItem[] = [
     to: '/docs/test-engineering',
   },
   {
+    title: 'ChatGPT → GitHub Pages',
+    description: (
+      <>
+        Follow the complete path from a ChatGPT prompt to a committed Docusaurus change, GitHub Actions,
+        and the automatically published Knowledge Wiki on GitHub Pages.
+      </>
+    ),
+    to: '/docs/chatgpt-github-pages-workflow',
+  },
+  {
     title: 'More Topics',
     description: (
       <>
