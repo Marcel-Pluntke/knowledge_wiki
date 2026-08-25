@@ -6,6 +6,7 @@ const sidebars: SidebarsConfig = {
     'documentation',
     'automation',
     'test-engineering',
+    'chatgpt-github-pages-workflow',
     'lernhelden-architecture',
     {
       type: 'category',
