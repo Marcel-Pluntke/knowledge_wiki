@@ -79,6 +79,7 @@ const config: Config = {
         {to: '/tools', label: 'Tools', position: 'left'},
         {to: '/blog', label: 'Blog', position: 'left'},
         {to: '/lernhelden', label: 'Lernhelden', position: 'left'},
+        {to: '/games/lernhelden/?mode=football', label: 'Mathe Fußball', position: 'left'},
         {
           href: 'https://github.com/Marcel-Pluntke/knowledge_wiki',
           label: 'GitHub',

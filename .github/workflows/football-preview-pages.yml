@@ -1,0 +1,111 @@
+name: Football Preview Pages
+
+on:
+  push:
+    branches: [agent/football-mvp]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  statuses: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy-preview:
+    runs-on: ubuntu-latest
+    environment:
+      name: football-preview
+      url: https://Marcel-Pluntke.github.io/knowledge_wiki/football-preview/#/football
+    steps:
+      - name: Mark preview deployment pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }} \
+            -d '{"state":"pending","context":"football-preview-deploy","description":"Building isolated football preview"}'
+
+      - name: Checkout football preview branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/football-mvp
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate football branch
+        run: |
+          npm run typecheck
+          npm test
+
+      - name: Build football preview app
+        run: npm run build --workspace @lernhelden/app -- --base=/knowledge_wiki/football-preview/
+
+      - name: Preserve football preview build
+        run: |
+          mkdir -p /tmp/football-preview
+          cp -R apps/lernhelden/dist/games/lernhelden/. /tmp/football-preview/
+
+      - name: Checkout live main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          clean: true
+
+      - name: Install main dependencies
+        run: npm ci
+
+      - name: Build current live site from main
+        run: npm run build
+
+      - name: Add isolated football preview
+        run: |
+          rm -rf build/football-preview
+          mkdir -p build/football-preview
+          cp -R /tmp/football-preview/. build/football-preview/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload combined Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Mark preview deployment successful
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }} \
+            -d '{"state":"success","context":"football-preview-deploy","description":"Football preview is live","target_url":"https://Marcel-Pluntke.github.io/knowledge_wiki/football-preview/#/football"}'
+
+      - name: Mark preview deployment failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }} \
+            -d '{"state":"failure","context":"football-preview-deploy","description":"Football preview deployment failed"}'
