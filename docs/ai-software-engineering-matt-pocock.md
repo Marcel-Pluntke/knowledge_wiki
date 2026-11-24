@@ -217,6 +217,54 @@ Ratcheting bedeutet, neue Verstöße zu verhindern und bestehende Altlasten schr
 - [ ] Änderungen in kleinen Diffs überprüfen; kritische Entscheidungen manuell freigeben.
 - [ ] Wiederkehrende Fehler durch Tests, Lint-Regeln, ADRs oder Skills verhindern.
 
+## 7. Praxis-Guideline: Ein Feature in einer bestehenden Codebase umsetzen {#praxis-guideline}
+
+**Beispiel:** Eine bestehende Prüfbericht-Webanwendung soll einen CSV-Export erhalten. Der Export berücksichtigt die aktiven Filter und bestehende Zugriffsrechte.
+
+### Phase A – Gemeinsam planen (Human in the Loop)
+
+| Schritt | Konkretes Vorgehen / Beispiel-Prompt | Ergebnis |
+| --- | --- | --- |
+| 1. Codebase verstehen | „Analysiere die bestehende Prüfberichtsliste, ihre API, Filter, Tests, Glossar und ADRs. Noch nichts ändern.“ | Betroffene Module und vorhandene Schnittstellen bekannt. |
+| 2. Alignment ([Grill me](#32-grill-me-und-grill-with-docs-ausrichtung-der-domänensprache)) | „Befrage mich einzeln zu CSV-Spalten, Filtern, Berechtigungen und Edge Cases. Schlage jeweils eine Lösung vor.“ | Entscheidungen geklärt; Glossar und ADRs bei Bedarf aktualisiert. |
+| 3. Prototyp ([Prototyping](#33-prototyping-und-reduktion-des-entscheidungsraums)) | „Zeige mir zwei Varianten für den Export-Button und den Fehlerzustand.“ | Mensch wählt die Variante. Bei reinen Backend-Änderungen überspringen. |
+| 4. Spezifikation ([to spec](#34-erstellung-von-prds-specs-und-kanban-tickets)) | „Erstelle eine kurze Spec mit Akzeptanzkriterien, Testfällen und Out-of-Scope.“ | Verbindliche, im Repository gespeicherte Spec. |
+| 5. Tickets ([vertikale Slices](#41-vertikale-slices-tracer-bullets-vs-horizontale-schichten)) | „Zerlege die Spec in kleine, durchgängig testbare Tickets. Definiere Abhängigkeiten und Testgrenzen.“ | Ticket-DAG mit klaren Arbeitspaketen. |
+
+**Beispiel-Spec:**
+
+- Exportiert alle zum Filter passenden, zugänglichen Prüfberichte als CSV (nicht nur die aktuelle Bildschirmseite).
+- Spalten: Prüfnummer, Datum, Status. Korrekte CSV-Escapes, Schutz vor Tabellenkalkulations-Formelinjektion, definierter Leerzustand.
+- Out of Scope: Excel-Export, neue Datenbankstruktur, Änderung des Berechtigungssystems.
+
+**Beispiel-Tickets:** A → B (sequenziell; keine künstliche Parallelisierung).
+
+| Ticket | Vertikaler Durchstich | Akzeptanztest |
+| --- | --- | --- |
+| A | Export-Button → API → bestehende Datenabfrage → CSV-Datei, zunächst ohne Filter, hinter Feature Flag. | Nur berechtigte Datensätze; gültige CSV inklusive Sonderzeichen und leerer Ergebnisse. |
+| B (nach A) | Aktive UI-Filter → Export-API → gefilterte Datenabfrage; Feature Flag nach Review freigeben. | CSV enthält genau die zugänglichen Treffer über alle Listenseiten hinweg. |
+
+### Phase B – Umsetzen lassen (AFK)
+
+| Schritt | Konkretes Vorgehen / Beispiel-Prompt | Ergebnis |
+| --- | --- | --- |
+| 6. Frischer Kontext ([Clear Context](#22-das-memento-phänomen-und-kontext-management)) | Neue Agenten-Sitzung pro Ticket; Spec, Ticket, Standards und relevante Dateien laden. Eigener Branch / Worktree. | Fokussierter Kontext und isolierter Arbeitsstand. |
+| 7. Implementieren ([TDD](#42-test-driven-development-tdd-als-qualitäts-obergrenze)) | „Bearbeite nur Ticket A. Schreibe zuerst einen fehlschlagenden Verhaltenstest, dann minimalen Code, anschließend Refactoring. Bestehende Modulgrenzen respektieren.“ | Red → Green → Refactor; keine ungeplanten Umbauten. |
+| 8. Prüfen und übergeben ([AFK-Loops](#43-parallele-agenten-ausführung-sandboxing-und-afk-loops)) | „Führe die vorhandenen Tests, Typprüfung und Lint aus. Dokumentiere Ergebnisse und öffne einen kleinen PR. Nicht eigenständig freigeben.“ | Reviewbarer Diff mit Prüfergebnissen; bei Fehlern nacharbeiten. |
+
+Nach erfolgreichem Review und Merge von A beginnt B mit einem frischen Kontext auf dem aktualisierten Code.
+
+### Phase C – Review und Lernen (Human in the Loop)
+
+| Schritt | Konkretes Vorgehen / Beispiel-Prompt | Ergebnis |
+| --- | --- | --- |
+| 9. Review und Merge ([Review-Strategien](#61-review-strategien-stacked-diffs-feature-flags-und-2-way--vs-1-way-doors)) | Schnittstellen, Berechtigungen, Akzeptanzkriterien und UI prüfen. Kritische Änderungen manuell freigeben. | Feature getestet und bewusst freigeschaltet. |
+| 10. Retro ([Retro-Skill](#62-der-retro-skill-und-die-härtung-der-entwicklungs-umgebung)) | „Analysiere Session und Review. Welche wiederkehrenden Fehler können wir mit Tests, Lint-Regeln oder Standards verhindern?“ | Z. B. zentralen CSV-Helper und Regressionstest gegen Formelinjektion ergänzen. |
+
+:::tip Merksatz für jedes Feature
+Erst verstehen und entscheiden → Spec und Tickets → frischer Kontext → TDD → Review → Retro. Bei kleinen Änderungen genügt eine kurze Spec im Ticket; bei großen Änderungen wird der gleiche Ablauf auf mehrere Tickets verteilt.
+:::
+
 ## Quellenhinweis
 
 Grundlage dieser Seite ist die bereitgestellte Zusammenfassung des Matt-Pocock-Workflows. Die zwei im Ausgangstext erwähnten Quellen wurden nicht mit Titel oder URL übermittelt; konkrete Quellenverweise und die genannten Beispielzahlen sind deshalb nicht unabhängig verifiziert.
