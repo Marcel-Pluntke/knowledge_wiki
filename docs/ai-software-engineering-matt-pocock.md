@@ -23,35 +23,7 @@ Der Gesamtablauf gliedert sich in vier zentrale Phasen:
 | 3. AFK-Umsetzung und Qualitätssicherung | KI-Agenten mit automatisierten Kontrollen | Isolierte Implementierung, TDD, getestete Änderungen und Review |
 | 4. Kontinuierliche Systemhärtung | Mensch + KI | Retrospektive, deterministische Regeln und verbesserte Agenten-Skills |
 
-```text
-HUMAN IN THE LOOP
-  Grill me / Grill with docs
-            |
-            v
-  Glossar + ADRs + Prototypen
-            |
-            v
-  PRD / Spec -> Tickets (DAG)
-            |
-============|========================
-            v
-AFK         +--> Agent A / Worktree A
-            +--> Agent B / Worktree B
-            +--> Agent C / Worktree C
-                         |
-                 Red -> Green -> Refactor
-                         |
-                 Typecheck / Test / Lint
-                         |
-============|========================
-            v
-HUMAN + KI  Review / Merge
-            |
-            v
-            Retro -> Regeln / Skills
-            |
-            +--> nächster Entwicklungszyklus
-```
+![Gesamtworkflow nach Matt Pocock](./diagrams/ai-software-engineering/workflow.svg)
 
 ## 2. Technische Beschränkungen von LLMs im Software Engineering
 
@@ -127,15 +99,7 @@ Nach Abschluss der Befragungs- und Prototyping-Phase wird das konsolidierte Wiss
 
 Beispiel eines Ticket-DAG:
 
-```text
-            [A: Basis-Slice]
-              /           \
-             v             v
-   [B: Feature 1]    [C: Feature 2]
-             \             /
-              v           v
-           [D: Integration]
-```
+![Ticket-Abhängigkeiten](./diagrams/ai-software-engineering/ticket-dag.svg)
 
 B und C können nach A parallel bearbeitet werden; D hängt von beiden ab.
 
@@ -148,16 +112,7 @@ Bei der Erstellung der Ticket-Struktur wird das LLM angewiesen, Arbeitseinheiten
 - **Problem horizontaler Arbeit:** Unbeaufsichtigte KI-Agenten neigen dazu, schichtenweise zu arbeiten (zuerst alle Datenbank-Schemata, dann alle API-Endpunkte, schließlich die Benutzeroberfläche). Das verzögert die Integration: Rückkopplung über das Gesamtsystem entsteht erst spät.
 - **Vertikale Slices (Tracer Bullets):** Nach dem Prinzip aus *The Pragmatic Programmer* deckt jedes Ticket einen dünnen, funktionalen Durchstich über die benötigten Systemschichten hinweg ab (Datenbank, Service-Logik und UI-Komponente). So entsteht nach jedem abgeschlossenen Ticket ein durchgängig testbares Gesamtsystem.
 
-```text
-Horizontal:                 Vertikal:
-
-UI       [-----------]      UI       [1] [2] [3]
-API      [-----------]      API      [1] [2] [3]
-Service  [-----------]      Service  [1] [2] [3]
-DB       [-----------]      DB       [1] [2] [3]
-
-Integration erst spät       Testbares Feature je Slice
-```
+![Horizontale Schichten vs. vertikale Slices](./diagrams/ai-software-engineering/vertical-slices.svg)
 
 ### 4.2 Test-Driven Development (TDD) als Qualitäts-Obergrenze
 
@@ -202,6 +157,8 @@ In Anlehnung an John Ousterhouts *A Philosophy of Software Design* unterscheidet
 
 Unbeaufsichtigte KI kann flache Strukturen begünstigen, indem sie Logik in viele kleine Dateien auslagert. Tiefe Module bieten dagegen klare Testgrenzen und kapseln interne Komplexität hinter einer einfachen API. Die Modultiefe ergibt sich nicht allein aus der Dateigröße oder Dateianzahl.
 
+![Tiefe und flache Module](./diagrams/ai-software-engineering/module-depth.svg)
+
 ### 5.2 Das Gray-Box-Prinzip zum Schutz des mentalen Modells
 
 Durch die hohe Generierungsgeschwindigkeit der KI droht Entwicklern das mentale Modell über die eigene Codebase zu entgleiten.
@@ -209,22 +166,7 @@ Durch die hohe Generierungsgeschwindigkeit der KI droht Entwicklern das mentale 
 - **Konzept der Gray Boxes:** Entwickler definieren und verstehen Modul-Schnittstellen und deren äußeres Verhalten präzise. Die konkrete innere Implementierung wird innerhalb dieser Grenzen an die KI delegiert.
 - **Nutzen:** Der Entwickler behält die Kontrolle über Makro-Architektur und Systemdesign, ohne jede einzelne Implementierungszeile im Kopf behalten zu müssen.
 
-```text
-          Mensch versteht und kontrolliert
-                         |
-                         v
-              +---------------------+
-              | Öffentliche API     |
-              +---------------------+
-              |                     |
-              | Interne Komplexität |  <-- KI-Umsetzung
-              | (Gray Box)          |
-              |                     |
-              +---------------------+
-                         |
-                         v
-                 Tests am Verhalten
-```
+![Gray Box – kontrollierte Delegation](./diagrams/ai-software-engineering/gray-box.svg)
 
 ## 6. Code-Review, Stacked Diffs und kontinuierliche Retrospektive (Retro-Skill)
 
@@ -261,21 +203,7 @@ Ratcheting bedeutet, neue Verstöße zu verhindern und bestehende Altlasten schr
 
 **Kontinuierliche Systemhärtung:** Das Feedback des Entwicklers fließt in System-Prompts, Linter-Konfigurationen, Repository-Dokumente (z. B. `coding-standards.mmd`) und Agenten-Skills zurück. Das Gesamtsystem kann dadurch mit jedem Entwicklungszyklus robuster gegen wiederkehrende Fehler werden.
 
-```text
-Agenten-Sessions + Review-Kommentare
-                 |
-                 v
-           Muster erkennen
-                 |
-                 v
-      Regel / Test / Skill verbessern
-                 |
-                 v
-          CI erzwingt Regel
-                 |
-                 v
-       Nächste Agenten-Sitzung
-```
+![Kontinuierliche Systemhärtung](./diagrams/ai-software-engineering/retro-loop.svg)
 
 ## Praktische Checkliste für die Anwendung
 
