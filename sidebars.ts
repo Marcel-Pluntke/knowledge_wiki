@@ -7,6 +7,7 @@ const sidebars: SidebarsConfig = {
     'automation',
     'test-engineering',
     'chatgpt-github-pages-workflow',
+    'ai-software-engineering-matt-pocock',
     'lernhelden-architecture',
     {
       type: 'category',

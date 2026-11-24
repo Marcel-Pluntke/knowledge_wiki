@@ -52,6 +52,16 @@ const FeatureList: FeatureItem[] = [
     to: '/docs/chatgpt-github-pages-workflow',
   },
   {
+    title: 'KI-gestütztes Software Engineering',
+    description: (
+      <>
+        Matt Pococks Workflow: Alignment, Kontextmanagement, vertikale Slices, TDD,
+        autonome KI-Agenten und kontinuierliche Verbesserung der Entwicklungsumgebung.
+      </>
+    ),
+    to: '/docs/ai-software-engineering-matt-pocock',
+  },
+  {
     title: 'More Topics',
     description: (
       <>
