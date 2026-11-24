@@ -205,31 +205,25 @@ Ratcheting bedeutet, neue Verstöße zu verhindern und bestehende Altlasten schr
 
 ![Kontinuierliche Systemhärtung](./diagrams/ai-software-engineering/retro-loop.svg)
 
-## Praktische Checkliste für die Anwendung
-
-- [ ] Domänensprache und bestehende ADRs prüfen.
-- [ ] Alignment-Fragen klären, offene Entscheidungen dokumentieren.
-- [ ] UI-Prototypen bei Bedarf bewerten und Variante auswählen.
-- [ ] PRD, Akzeptanzkriterien und Out-of-Scope festhalten.
-- [ ] Vertikale Tickets mit expliziten Abhängigkeiten erstellen.
-- [ ] Agenten isoliert mit frischem Kontext starten.
-- [ ] Red-Green-Refactor sowie Typecheck, Tests und Lint ausführen.
-- [ ] Änderungen in kleinen Diffs überprüfen; kritische Entscheidungen manuell freigeben.
-- [ ] Wiederkehrende Fehler durch Tests, Lint-Regeln, ADRs oder Skills verhindern.
-
 ## 7. Praxis-Guideline: Ein Feature in einer bestehenden Codebase umsetzen {#praxis-guideline}
 
 **Beispiel:** Eine bestehende Prüfbericht-Webanwendung soll einen CSV-Export erhalten. Der Export berücksichtigt die aktiven Filter und bestehende Zugriffsrechte.
 
+**Einmal pro Repository:** Skills installieren (siehe [offizielle Anleitung](https://github.com/mattpocock/skills)) und `/setup-matt-pocock-skills` ausführen, um Issue-Tracker und Dokumentationsstruktur einzurichten.
+
+**Skill-Kette:** `/grill-with-docs` → optional `/prototype` → `/to-spec` → `/to-tickets` → `/implement` (mit `/tdd` und `/code-review`) → `/retro`.
+
+Die Slash-Schreibweise bezeichnet den Skill; die konkrete Aufrufsyntax hängt vom Coding-Agenten ab. Modell-initiierte Skills können auch automatisch geladen werden. Kontext-Reset und Git Worktree sind Aktionen der Entwicklungsumgebung, keine eigenen Pocock-Skills.
+
 ### Phase A – Gemeinsam planen (Human in the Loop)
 
-| Schritt | Konkretes Vorgehen / Beispiel-Prompt | Ergebnis |
-| --- | --- | --- |
-| 1. Codebase verstehen | „Analysiere die bestehende Prüfberichtsliste, ihre API, Filter, Tests, Glossar und ADRs. Noch nichts ändern.“ | Betroffene Module und vorhandene Schnittstellen bekannt. |
-| 2. Alignment ([Grill me](#32-grill-me-und-grill-with-docs-ausrichtung-der-domänensprache)) | „Befrage mich einzeln zu CSV-Spalten, Filtern, Berechtigungen und Edge Cases. Schlage jeweils eine Lösung vor.“ | Entscheidungen geklärt; Glossar und ADRs bei Bedarf aktualisiert. |
-| 3. Prototyp ([Prototyping](#33-prototyping-und-reduktion-des-entscheidungsraums)) | „Zeige mir zwei Varianten für den Export-Button und den Fehlerzustand.“ | Mensch wählt die Variante. Bei reinen Backend-Änderungen überspringen. |
-| 4. Spezifikation ([to spec](#34-erstellung-von-prds-specs-und-kanban-tickets)) | „Erstelle eine kurze Spec mit Akzeptanzkriterien, Testfällen und Out-of-Scope.“ | Verbindliche, im Repository gespeicherte Spec. |
-| 5. Tickets ([vertikale Slices](#41-vertikale-slices-tracer-bullets-vs-horizontale-schichten)) | „Zerlege die Spec in kleine, durchgängig testbare Tickets. Definiere Abhängigkeiten und Testgrenzen.“ | Ticket-DAG mit klaren Arbeitspaketen. |
+| Schritt | Skill / Command | Konkretes Vorgehen / Beispiel-Prompt | Ergebnis |
+| --- | --- | --- | --- |
+| 1. Codebase verstehen | `/grill-with-docs` (Codebase erkunden; noch nichts ändern) | „Analysiere die bestehende Prüfberichtsliste, ihre API, Filter, Tests, Glossar und ADRs. Noch nichts ändern.“ | Betroffene Module und vorhandene Schnittstellen bekannt. |
+| 2. Alignment ([Grill me](#32-grill-me-und-grill-with-docs-ausrichtung-der-domänensprache)) | `/grill-with-docs` (alternativ `/grill-me` ohne Codebezug) | „Befrage mich einzeln zu CSV-Spalten, Filtern, Berechtigungen und Edge Cases. Schlage jeweils eine Lösung vor.“ | Entscheidungen geklärt; Glossar und ADRs bei Bedarf aktualisiert. |
+| 3. Prototyp ([Prototyping](#33-prototyping-und-reduktion-des-entscheidungsraums)) | `/prototype` (optional) | „Zeige mir zwei Varianten für den Export-Button und den Fehlerzustand.“ | Mensch wählt die Variante. Bei reinen Backend-Änderungen überspringen. |
+| 4. Spezifikation ([to spec](#34-erstellung-von-prds-specs-und-kanban-tickets)) | `/to-spec` | „Erstelle eine kurze Spec mit Akzeptanzkriterien, Testfällen und Out-of-Scope.“ | Verbindliche, im Repository gespeicherte Spec. |
+| 5. Tickets ([vertikale Slices](#41-vertikale-slices-tracer-bullets-vs-horizontale-schichten)) | `/to-tickets` | „Zerlege die Spec in kleine, durchgängig testbare Tickets. Definiere Abhängigkeiten und Testgrenzen.“ | Ticket-DAG mit klaren Arbeitspaketen. |
 
 **Beispiel-Spec:**
 
@@ -246,20 +240,20 @@ Ratcheting bedeutet, neue Verstöße zu verhindern und bestehende Altlasten schr
 
 ### Phase B – Umsetzen lassen (AFK)
 
-| Schritt | Konkretes Vorgehen / Beispiel-Prompt | Ergebnis |
-| --- | --- | --- |
-| 6. Frischer Kontext ([Clear Context](#22-das-memento-phänomen-und-kontext-management)) | Neue Agenten-Sitzung pro Ticket; Spec, Ticket, Standards und relevante Dateien laden. Eigener Branch / Worktree. | Fokussierter Kontext und isolierter Arbeitsstand. |
-| 7. Implementieren ([TDD](#42-test-driven-development-tdd-als-qualitäts-obergrenze)) | „Bearbeite nur Ticket A. Schreibe zuerst einen fehlschlagenden Verhaltenstest, dann minimalen Code, anschließend Refactoring. Bestehende Modulgrenzen respektieren.“ | Red → Green → Refactor; keine ungeplanten Umbauten. |
-| 8. Prüfen und übergeben ([AFK-Loops](#43-parallele-agenten-ausführung-sandboxing-und-afk-loops)) | „Führe die vorhandenen Tests, Typprüfung und Lint aus. Dokumentiere Ergebnisse und öffne einen kleinen PR. Nicht eigenständig freigeben.“ | Reviewbarer Diff mit Prüfergebnissen; bei Fehlern nacharbeiten. |
+| Schritt | Skill / Command | Konkretes Vorgehen / Beispiel-Prompt | Ergebnis |
+| --- | --- | --- | --- |
+| 6. Frischer Kontext ([Clear Context](#22-das-memento-phänomen-und-kontext-management)) | Kein eigener Skill: neue Sitzung / Worktree; optional `/handoff` | Neue Agenten-Sitzung pro Ticket; Spec, Ticket, Standards und relevante Dateien laden. Eigener Branch / Worktree. | Fokussierter Kontext und isolierter Arbeitsstand. |
+| 7. Implementieren ([TDD](#42-test-driven-development-tdd-als-qualitäts-obergrenze)) | `/implement` → `/tdd`, `/codebase-design` | „Bearbeite nur Ticket A. Schreibe zuerst einen fehlschlagenden Verhaltenstest, dann minimalen Code, anschließend Refactoring. Bestehende Modulgrenzen respektieren.“ | Red → Green → Refactor; keine ungeplanten Umbauten. |
+| 8. Prüfen und übergeben ([AFK-Loops](#43-parallele-agenten-ausführung-sandboxing-und-afk-loops)) | `/code-review`, `/pr` (Prüfungen über Projektbefehle) | „Führe die vorhandenen Tests, Typprüfung und Lint aus. Dokumentiere Ergebnisse und öffne einen kleinen PR. Nicht eigenständig freigeben.“ | Reviewbarer Diff mit Prüfergebnissen; bei Fehlern nacharbeiten. |
 
-Nach erfolgreichem Review und Merge von A beginnt B mit einem frischen Kontext auf dem aktualisierten Code.
+Nach erfolgreichem Review und Merge von A beginnt B mit einem frischen Kontext auf dem aktualisierten Code. Für größere Specs mit mehreren unabhängigen Tickets kann alternativ `/implement-spec` den Ticket-DAG auf einem Integrationsbranch koordinieren.
 
 ### Phase C – Review und Lernen (Human in the Loop)
 
-| Schritt | Konkretes Vorgehen / Beispiel-Prompt | Ergebnis |
-| --- | --- | --- |
-| 9. Review und Merge ([Review-Strategien](#61-review-strategien-stacked-diffs-feature-flags-und-2-way--vs-1-way-doors)) | Schnittstellen, Berechtigungen, Akzeptanzkriterien und UI prüfen. Kritische Änderungen manuell freigeben. | Feature getestet und bewusst freigeschaltet. |
-| 10. Retro ([Retro-Skill](#62-der-retro-skill-und-die-härtung-der-entwicklungs-umgebung)) | „Analysiere Session und Review. Welche wiederkehrenden Fehler können wir mit Tests, Lint-Regeln oder Standards verhindern?“ | Z. B. zentralen CSV-Helper und Regressionstest gegen Formelinjektion ergänzen. |
+| Schritt | Skill / Command | Konkretes Vorgehen / Beispiel-Prompt | Ergebnis |
+| --- | --- | --- | --- |
+| 9. Review und Merge ([Review-Strategien](#61-review-strategien-stacked-diffs-feature-flags-und-2-way--vs-1-way-doors)) | `/code-review`, `/pr` (Merge manuell) | Schnittstellen, Berechtigungen, Akzeptanzkriterien und UI prüfen. Kritische Änderungen manuell freigeben. | Feature getestet und bewusst freigeschaltet. |
+| 10. Retro ([Retro-Skill](#62-der-retro-skill-und-die-härtung-der-entwicklungs-umgebung)) | `/retro` | „Analysiere Session und Review. Welche wiederkehrenden Fehler können wir mit Tests, Lint-Regeln oder Standards verhindern?“ | Z. B. zentralen CSV-Helper und Regressionstest gegen Formelinjektion ergänzen. |
 
 :::tip Merksatz für jedes Feature
 Erst verstehen und entscheiden → Spec und Tickets → frischer Kontext → TDD → Review → Retro. Bei kleinen Änderungen genügt eine kurze Spec im Ticket; bei großen Änderungen wird der gleiche Ablauf auf mehrere Tickets verteilt.
@@ -268,6 +262,8 @@ Erst verstehen und entscheiden → Spec und Tickets → frischer Kontext → TDD
 ## Quellenhinweis
 
 Grundlage dieser Seite ist die bereitgestellte Zusammenfassung des Matt-Pocock-Workflows. Die zwei im Ausgangstext erwähnten Quellen wurden nicht mit Titel oder URL übermittelt; konkrete Quellenverweise und die genannten Beispielzahlen sind deshalb nicht unabhängig verifiziert.
+
+**Aktuelle Skill-Namen und Installation:** [Matt Pocock – Skills for Real Engineers (offizielles GitHub-Repository)](https://github.com/mattpocock/skills), abgerufen am 25. November 2026.
 
 Im Ausgangstext genannte weiterführende Literatur:
 
