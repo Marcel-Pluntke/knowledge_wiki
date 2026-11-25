@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {buildPlan,startPlan,settle,control} from '../src/components/CycleTimer/engine.mjs';
+
+test('default workout, optional rests, validation and timer transitions',()=>{
+const config={warmup:180,rounds:3,exercises:6,work:40,rest:20,roundRest:60,finisher:240,lastExerciseRest:true,lastRoundRest:false};
+const steps=buildPlan(config);
+assert.equal(steps.reduce((n,s)=>n+s.seconds,0),1620);
+assert.equal(steps.filter(s=>s.kind==='work').length,18);
+assert.equal(steps.filter(s=>s.kind==='rest').length,18);
+assert.equal(steps.filter(s=>s.kind==='roundRest').length,2);
+assert.equal(steps[0].kind,'warmup');
+assert.equal(steps.at(-1).kind,'finisher');
+assert.equal(buildPlan({...config,lastExerciseRest:false}).filter(s=>s.kind==='rest').length,15);
+assert.equal(buildPlan({...config,lastRoundRest:true}).filter(s=>s.kind==='roundRest').length,3);
+assert.deepEqual(buildPlan({...config,work:0}),[]);
+assert.deepEqual(buildPlan({...config,rounds:1,exercises:1,warmup:0,rest:0,roundRest:0,finisher:0}).map(s=>s.kind),['work']);
+let s=startPlan(steps,1000);
+s=control(steps,s,'pause',11000);
+assert.equal(s.remainingMs,170000);
+assert.equal(settle(steps,s,999999).remainingMs,170000);
+s=control(steps,s,'resume',21000);
+s=settle(steps,s,191000);
+assert.equal(s.index,1);
+assert.equal(s.remainingMs,40000);
+s=settle(steps,s,241000);
+assert.equal(s.index,2);
+assert.equal(s.remainingMs,10000);
+s=control(steps,s,'repeat',241000);
+assert.equal(s.remainingMs,20000);
+s=control(steps,s,'pause',242000);
+s=control(steps,s,'next',242000);
+assert.equal(s.index,3);
+assert.equal(s.deadline,null);
+assert.equal(s.remainingMs,40000);
+s=control(steps,s,'resume',250000);
+assert.equal(settle(steps,s,99999999).index,steps.length);
+assert.equal(settle(steps,s,99999999).deadline,null);
+
+});

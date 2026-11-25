@@ -1,6 +1,7 @@
 import {useMemo, useState, type ReactNode} from 'react';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
+import Link from '@docusaurus/Link';
 
 import styles from './styles.module.css';
 
@@ -204,7 +205,7 @@ export default function ToolsPage(): ReactNode {
   return (
     <Layout
       title="Tools"
-      description="Praktische Engineering-Rechner für das Knowledge Wiki.">
+      description="Engineering-Rechner und praktische Tools für das Knowledge Wiki.">
       <main className={styles.page}>
         <div className="container">
           <header className={styles.hero}>
@@ -215,6 +216,11 @@ export default function ToolsPage(): ReactNode {
               die zu erwartende Temperatur bei einem anderen Strom abschätzen.
             </p>
           </header>
+
+          <section className={styles.notice} aria-label="Weitere Tools">
+            <strong>Zyklus-Timer</strong> – frei konfigurierbare Trainingsintervalle, Runden und Pausen.{' '}
+            <Link className="button button--primary button--sm" to="/tools/zyklus-timer">Timer öffnen →</Link>
+          </section>
 
           <div className={styles.notice}>
             <strong>Grundlage für Rechner 1:</strong> IEC 61439-1:2020, 10.10.2.3.1. Für die Korrektur eines
