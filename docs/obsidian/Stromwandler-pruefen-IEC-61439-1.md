@@ -220,7 +220,12 @@ Wichtige Einflüsse: Leitungs- und Kontaktwiderstände, Eigenerwärmung durch de
 
 Beide Verfahren ergänzen sich. Die mittlere Wicklungstemperatur darf nicht ohne zusätzlichen Nachweis als maximale lokale Wicklungstemperatur interpretiert werden.
 
-Vertiefung: [IEC 61869-2:2012](https://webstore.iec.ch/en/publication/6050), Abschnitt 7.2.2; [Temperature Rise Testing of Current Transformers: Improvement in Test Method (Chalmers)](https://publications.lib.chalmers.se/records/fulltext/173228/173228.pdf), mit Widerstandsmethode und Diskussion des Messverfahrens.
+### 5.6 Quellen zum Rechenmodell {#56-quellen-zum-rechenmodell}
+
+- **IEEE C57.13-2016**, öffentlich zugängliche nationale Fassung SASO IEEE C57:2018: [Volltext, S. 61, Abschnitt 11.2.5, Gleichungen (26) und (27)](https://www.saso.gov.sa/ar/Laws-And-Regulations/Technical_regulations/Documents/SASO-IEEE-C57-2018-E.pdf#page=63). Belegt die verwendete Widerstandsformel und die Konstanten 234,5 für Kupfer und 225 für EC-Aluminium. Abschnitte 11.2.3–11.2.6 behandeln außerdem Vierleitermessung, Abschaltkorrektur und Temperaturerhöhung.
+- **Garduno, Hideki (2012):** Temperature Rise Testing of Current Transformers: Improvement in Test Method. Masterarbeit, Chalmers University of Technology. [Volltext, S. 14, Abschnitt 3.1.4, Gleichungen (15) und (16)](https://publications.lib.chalmers.se/records/fulltext/173228/173228.pdf#page=24) · [Universitätsarchiv](https://odr.chalmers.se/items/0e911724-2e69-41e3-9c01-f30e577e11fb). Belegt die Berechnung der Wicklungstemperatur und der Temperaturerhöhung aus Messwerten eines Stromwandler-Erwärmungsversuchs.
+ 
+Für IEC-Prüfungen ist zusätzlich [IEC 61869-2:2012](https://webstore.iec.ch/en/publication/6050), insbesondere Abschnitt 7.2.2.204, soweit anwendbar, heranzuziehen. Die IEEE-Referenz belegt die Rechenmethode, ersetzt jedoch nicht die für den konkreten IEC-Nachweis geltenden Prüfbedingungen und Grenzwerte.
 
 ## Kompakter Prüfablauf {#kompakter-prüfablauf}
 
