@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState, type ReactNode} from 'react';
+import {useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
 import Link from '@docusaurus/Link';
@@ -57,6 +57,82 @@ export default function CycleTimerPage():ReactNode{
   const [lastRoundRest,setLastRoundRest]=useState(false);
   const [state,setState]=useState<TimerState|null>(null);
   const [ready,setReady]=useState(false);
+  const [fullscreen,setFullscreen]=useState(false);
+  const sessionRef=useRef<HTMLElement|null>(null);
+  const fullscreenButtonRef=useRef<HTMLButtonElement|null>(null);
+  const fullscreenWanted=useRef(false);
+  const nativeFullscreen=useRef(false);
+
+  const leaveFullscreen=()=>{
+    fullscreenWanted.current=false;
+    nativeFullscreen.current=false;
+    setFullscreen(false);
+    if(document.fullscreenElement===sessionRef.current&&document.fullscreenElement){
+      void document.exitFullscreen().catch(()=>{});
+    }
+  };
+
+  const toggleFullscreen=()=>{
+    if(fullscreenWanted.current){leaveFullscreen();return;}
+    const element=sessionRef.current;
+    if(!element)return;
+    fullscreenWanted.current=true;
+    setFullscreen(true);
+    // Use native fullscreen when available; otherwise keep the viewport-filling CSS view.
+    if(document.fullscreenEnabled&&typeof element.requestFullscreen==='function'){
+      try{
+        void element.requestFullscreen().then(()=>{
+          if(!fullscreenWanted.current&&document.fullscreenElement===element){
+            void document.exitFullscreen().catch(()=>{});
+          }
+        }).catch(()=>{});
+      }catch{/* The CSS fallback remains active. */}
+    }
+  };
+
+  useEffect(()=>{
+    const onChange=()=>{
+      if(document.fullscreenElement===sessionRef.current&&document.fullscreenElement){
+        nativeFullscreen.current=true;
+      }else if(nativeFullscreen.current){
+        nativeFullscreen.current=false;
+        fullscreenWanted.current=false;
+        setFullscreen(false);
+      }
+    };
+    document.addEventListener('fullscreenchange',onChange);
+    return ()=>document.removeEventListener('fullscreenchange',onChange);
+  },[]);
+
+  useEffect(()=>{
+    if(!fullscreen)return;
+    const previousOverflow=document.body.style.overflow;
+    const previousFocus=document.activeElement as HTMLElement|null;
+    document.body.style.overflow='hidden';
+    fullscreenButtonRef.current?.focus({preventScroll:true});
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){
+        event.preventDefault();
+        leaveFullscreen();
+      }
+      if(event.key==='Tab'){
+        const buttons=sessionRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)');
+        if(!buttons?.length)return;
+        const first=buttons[0],last=buttons[buttons.length-1];
+        if(event.shiftKey&&(document.activeElement===first||!sessionRef.current?.contains(document.activeElement))){
+          event.preventDefault();last.focus();
+        }else if(!event.shiftKey&&(document.activeElement===last||!sessionRef.current?.contains(document.activeElement))){
+          event.preventDefault();first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown',onKey);
+    return ()=>{
+      document.body.style.overflow=previousOverflow;
+      document.removeEventListener('keydown',onKey);
+      if(previousFocus?.isConnected)previousFocus.focus({preventScroll:true});
+    };
+  },[fullscreen]);
   useEffect(()=>{
     try{
       const saved=JSON.parse(localStorage.getItem('wiki-cycle-timer-v1')||'null');
@@ -118,7 +194,10 @@ export default function CycleTimerPage():ReactNode{
           <div className={styles.actions}><button className="button button--primary button--lg" disabled={!plan.length} onClick={()=>setState(startPlan(plan,performance.now()))}>Start</button><button className="button button--secondary" onClick={()=>{setValues(defaults);setLastExerciseRest(true);setLastRoundRest(false);}}>Standardwerte</button></div>
         </section>
         <section className={shared.card}><Heading as="h2">Ablaufübersicht</Heading><Flow {...helpProps}/><small>Die Vorschau zeigt die verschachtelten Wiederholungen. Phasen mit 0 Sekunden werden übersprungen.</small></section>
-      </div>:<section className={styles.session} data-kind={current?.kind??'done'}>
+      </div>:<section ref={sessionRef} className={styles.session} data-kind={current?.kind??'done'} data-fullscreen={fullscreen} role={fullscreen?'dialog':undefined} aria-modal={fullscreen?true:undefined} aria-label="Zyklus-Timer">
+        <div className={styles.viewControls}>
+          <button ref={fullscreenButtonRef} type="button" className="button button--outline button--secondary" aria-pressed={fullscreen} onClick={toggleFullscreen}>{fullscreen?'Vollbild beenden':'Vollbild'}</button>
+        </div>
         <div className={styles.phase} aria-live="polite">{current?labels[current.kind]:'Ablauf abgeschlossen'}</div>
         {current&&<><p className={styles.context}>{current.round?'Zyklus '+current.round+' / '+values.rounds:'Einmalige Phase'}{current.exercise?' · Intervall '+current.exercise+' / '+values.exercises:''} · Schritt {state.index+1} / {plan.length}</p>
         <div className={styles.clock} aria-label="Verbleibende Zeit">{fmt(remaining)}</div>
@@ -128,9 +207,9 @@ export default function CycleTimerPage():ReactNode{
         <p className={styles.status}>{running?'Timer läuft':'Pausiert'}</p></>}
         <div className={styles.actions}>
           {current&&<><button className="button button--primary button--lg" onClick={()=>act(running?'pause':'resume')}>{running?'Pause':'Fortsetzen'}</button><button className="button button--secondary" onClick={()=>act('next')}>Nächster Schritt</button><button className="button button--secondary" onClick={()=>act('repeat')}>Schritt wiederholen</button></>}
-          <button className="button button--outline button--danger" onClick={()=>setState(null)}>{current?'Abbrechen':'Zur Konfiguration'}</button>
+          <button className="button button--outline button--danger" onClick={()=>{leaveFullscreen();setState(null);}}>{current?'Abbrechen':'Zur Konfiguration'}</button>
         </div>
-        <small>Bei gesperrtem Bildschirm kann der Browser die Anzeige anhalten. Für eine kontinuierliche Anzeige die Seite geöffnet lassen.</small>
+        <small className={styles.screenHint}>Bei gesperrtem Bildschirm kann der Browser die Anzeige anhalten. Für eine kontinuierliche Anzeige die Seite geöffnet lassen.</small>
       </section>}
     </div></main>
   </Layout>;
