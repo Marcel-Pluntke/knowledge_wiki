@@ -39,7 +39,7 @@
 /* Fullscreen works without the Fullscreen API, including mobile Safari. */
 .viewControls{display:flex;justify-content:flex-end;margin:0 0 .8rem}
 .viewControls button{min-height:44px}
-.session[data-fullscreen=true],.session:fullscreen{
+.session[data-fullscreen=true]{
   position:fixed;inset:0;z-index:10000;width:100%;max-width:none;
   height:100%;height:100dvh;max-height:none;margin:0;box-sizing:border-box;
   border:0;border-top:6px solid var(--phase,var(--ifm-color-primary));border-radius:0;
@@ -49,7 +49,7 @@
 }
 .session[data-fullscreen=true]>*{width:100%;max-width:760px;flex-shrink:0}
 .session[data-fullscreen=true] .viewControls{margin-bottom:clamp(.5rem,3vh,2rem)}
-.session[data-fullscreen=true] .clock{font-size:clamp(3.25rem, min(23vw,29dvh), 15rem);letter-spacing:-.055em;overflow-wrap:anywhere;margin:clamp(.3rem,2vh,1.5rem) 0}
+.session[data-fullscreen=true] .clock{font-size:clamp(3.25rem,23vw,15rem);font-size:clamp(3.25rem,min(23vw,29dvh),15rem);letter-spacing:-.055em;overflow-wrap:anywhere;margin:clamp(.3rem,2vh,1.5rem) 0}
 .session[data-fullscreen=true] .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}
 .session[data-fullscreen=true] .actions button{min-height:52px;font-size:clamp(.85rem,2.6vw,1.1rem);padding:.65rem .4rem}
 .session[data-fullscreen=true] .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;margin:.65rem 0}
@@ -60,7 +60,7 @@
   .session[data-fullscreen=true]>*{max-width:none;margin:0}
   .session[data-fullscreen=true] .viewControls{grid-column:1/-1;margin:0}
   .session[data-fullscreen=true] .phase,.session[data-fullscreen=true] .context{grid-column:1}
-  .session[data-fullscreen=true] .clock{grid-column:1;grid-row:4/7;font-size:clamp(3rem,min(13vw,28dvh),9rem);margin:0}
+  .session[data-fullscreen=true] .clock{grid-column:1;grid-row:4/7;font-size:clamp(3rem,13vw,9rem);font-size:clamp(3rem,min(13vw,28dvh),9rem);margin:0}
   .session[data-fullscreen=true] .progress{grid-column:1;height:8px}
   .session[data-fullscreen=true] .metrics{grid-column:2;grid-row:2/4;margin:0}
   .session[data-fullscreen=true] .actions{grid-column:2;grid-row:4/8;margin:0}
