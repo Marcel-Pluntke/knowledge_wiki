@@ -109,6 +109,7 @@ const config: Config = {
           items: [
             {label: 'Tools – Übersicht', to: '/tools'},
             {label: 'IEC 61439 Erwärmungs-Umrechner', to: '/tools/erwaermungs-umrechner'},
+            {label: 'Wicklungstemperatur-Rechner', to: '/tools/wicklungstemperatur'},
             {label: 'Zyklus-Timer', to: '/tools/zyklus-timer'},
             {label: 'Blog', to: '/blog'},
           ],

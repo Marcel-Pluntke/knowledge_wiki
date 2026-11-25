@@ -13,6 +13,12 @@ const tools = [
     to: '/tools/erwaermungs-umrechner',
   },
   {
+    title: 'Wicklungstemperatur-Rechner',
+    category: 'Engineering',
+    description: 'Bestimmt die mittlere Wicklungstemperatur aus Kaltwiderstand, Kalttemperatur und Warmwiderstand. Optional mit Temperaturerhöhung gegenüber der Umgebung am Prüfende.',
+    to: '/tools/wicklungstemperatur',
+  },
+  {
     title: 'Zyklus-Timer',
     category: 'Zeitsteuerung',
     description: 'Konfiguriere zeitgesteuerte Abläufe mit Start- und Abschlussphasen, wiederkehrenden Intervallen, Zyklen und Pausen. Mit Ablaufübersicht und Vollbildmodus.',

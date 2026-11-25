@@ -351,3 +351,9 @@
     width: 100%;
   }
 }
+
+.toolSelect{width:100%;min-width:0;padding:.8rem .9rem;border:1px solid var(--wiki-border);border-radius:14px;background:var(--wiki-surface-strong);color:var(--ifm-font-color-base);font:inherit}
+.toolSelect:focus-visible{outline:2px solid var(--ifm-color-primary);outline-offset:2px}
+.toolActions{display:flex;flex-wrap:wrap;gap:.65rem;margin-top:1.25rem}
+.resultBox + h3{margin-top:1.5rem}
+.resultMeta + .resultLabel{margin-top:1rem}
