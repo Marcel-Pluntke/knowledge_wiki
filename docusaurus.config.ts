@@ -1,6 +1,7 @@
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
+import {getTopicSections} from './topicCatalog';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
@@ -8,6 +9,7 @@ const config: Config = {
   title: 'Knowledge Wiki',
   tagline: 'Documentation, Automation, Test Engineering',
   favicon: 'img/knowledge-wiki-logo-blue-green.png',
+  customFields: {topicSections: getTopicSections()},
   staticDirectories: ['static', 'apps/lernhelden/dist'],
 
   future: {

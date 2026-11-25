@@ -1,99 +1,30 @@
 import type {ReactNode} from 'react';
-import clsx from 'clsx';
 import Link from '@docusaurus/Link';
 import Heading from '@theme/Heading';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import type {TopicSection} from '../../../topicCatalog';
 import styles from './styles.module.css';
 
-type FeatureItem = {
-  title: string;
-  description: ReactNode;
-  to: string;
-};
-
-const FeatureList: FeatureItem[] = [
-  {
-    title: 'Documentation',
-    description: (
-      <>
-        Learn how clear structure, shared standards, and good examples make technical knowledge reusable.
-        Follow practical notes and templates that keep docs useful over time.
-      </>
-    ),
-    to: '/docs/documentation',
-  },
-  {
-    title: 'Automation',
-    description: (
-      <>
-        Explore ways to reduce repetitive manual work in delivery, maintenance, and operations.
-        Focus on scripts and workflows that are simple, testable, and easy to improve.
-      </>
-    ),
-    to: '/docs/automation',
-  },
-  {
-    title: 'Test Engineering',
-    description: (
-      <>
-        Dive into approaches for building reliable automated tests across different layers.
-        See strategies for stable pipelines, readable test suites, and actionable quality signals.
-      </>
-    ),
-    to: '/docs/test-engineering',
-  },
-  {
-    title: 'ChatGPT → GitHub Pages',
-    description: (
-      <>
-        Follow the complete path from a ChatGPT prompt to a committed Docusaurus change, GitHub Actions,
-        and the automatically published Knowledge Wiki on GitHub Pages.
-      </>
-    ),
-    to: '/docs/chatgpt-github-pages-workflow',
-  },
-  {
-    title: 'KI-gestütztes Software Engineering',
-    description: (
-      <>
-        Matt Pococks Workflow: Alignment, Kontextmanagement, vertikale Slices, TDD,
-        autonome KI-Agenten und kontinuierliche Verbesserung der Entwicklungsumgebung.
-      </>
-    ),
-    to: '/docs/ai-software-engineering-matt-pocock',
-  },
-  {
-    title: 'More Topics',
-    description: (
-      <>
-        Collect additional ideas and experiments that support engineering effectiveness.
-        Expect short write-ups on tooling, collaboration, and technical learning paths.
-      </>
-    ),
-    to: '/docs/more-topics',
-  },
-];
-
-function Feature({title, description, to}: FeatureItem) {
+export default function HomepageFeatures({compact = false}: {compact?: boolean}): ReactNode {
+  const {siteConfig} = useDocusaurusContext();
+  const sections = siteConfig.customFields?.topicSections as TopicSection[] | undefined;
   return (
-    <div className={clsx('col col--6', styles.featureCardWrap)}>
-      <article className={styles.featureCard}>
-        <Heading as="h3">{title}</Heading>
-        <p>{description}</p>
-        <Link className="button button--primary button--sm" to={to}>
-          Read page
-        </Link>
-      </article>
-    </div>
-  );
-}
-
-export default function HomepageFeatures(): ReactNode {
-  return (
-    <section className={styles.features}>
-      <div className="container">
-        <div className="row">
-          {FeatureList.map((props) => (
-            <Feature key={props.title} {...props} />
+    <section className={compact ? styles.compact : styles.features} aria-label="Themenübersicht">
+      <div className={compact ? undefined : 'container'}>
+        {!compact && <Heading as="h2" className={styles.sectionTitle}>Topics</Heading>}
+        <div className={styles.topicGrid}>
+          {sections?.map(section => (
+            <article key={section.key} className={styles.featureCard}>
+              <Heading as="h2" className={styles.cardTitle}>{section.title}</Heading>
+              <p>{section.description}</p>
+              <ul className={styles.articleList}>
+                {section.articles.map(article => (
+                  <li key={article.id}>
+                    <Link to={'/docs/' + article.id.split('/').map(encodeURIComponent).join('/')}>{article.title}</Link>
+                  </li>
+                ))}
+              </ul>
+            </article>
           ))}
         </div>
       </div>

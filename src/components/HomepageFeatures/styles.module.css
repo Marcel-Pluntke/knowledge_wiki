@@ -73,3 +73,15 @@
     padding: 1.35rem;
   }
 }
+
+.sectionTitle{margin-bottom:1.25rem;letter-spacing:-.025em}
+.topicGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem}
+.compact{margin:1.5rem 0 2rem}
+.compact .topicGrid{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:1rem}
+.featureCard{display:flex;flex-direction:column;min-width:0}
+.featureCard .cardTitle{font-size:1.35rem;margin:0 0 .65rem;letter-spacing:-.025em}
+.articleList{list-style:none;padding:0;margin:auto 0 0}
+.articleList li{border-top:1px solid var(--wiki-border);margin:0}
+.articleList a{display:block;padding:.65rem .1rem;font-weight:600;line-height:1.4;overflow-wrap:anywhere}
+.articleList a:hover{text-decoration:underline}
+@media(max-width:650px){.topicGrid{grid-template-columns:1fr}}

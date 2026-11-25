@@ -1,8 +1,12 @@
 ---
 sidebar_position: 1
+title: Topics
 ---
 
-# Welcome
+import HomepageFeatures from '@site/src/components/HomepageFeatures';
 
-This site shares practical insights about documentation, automation, and test engineering.
-You will find focused notes, patterns, and ideas that can be applied in real projects.
+# Topics
+
+Alle Fachthemen und Artikel des Knowledge Wikis auf einen Blick. Wähle direkt einen Artikel oder nutze die Navigation, um innerhalb eines Fachbereichs zu wechseln.
+
+<HomepageFeatures compact />
