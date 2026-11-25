@@ -10,33 +10,33 @@ const defaults = {warmup:'180', rounds:'3', exercises:'6', work:'40', rest:'20',
 type Field = keyof typeof defaults;
 type HelpKey = Field | 'lastExerciseRest' | 'lastRoundRest';
 const fields: {key:Field; label:string; explanation:string}[] = [
-  {key:'warmup',label:'Aufwärmen',explanation:'Einmal vor der ersten Runde.'},
-  {key:'rounds',label:'Runden',explanation:'So oft wird der gesamte Übungsblock durchlaufen.'},
-  {key:'exercises',label:'Übungen je Runde',explanation:'So oft wechseln sich Belastung und Übungspause innerhalb einer Runde ab.'},
-  {key:'work',label:'Belastung',explanation:'Aktive Zeit pro Übung.'},
-  {key:'rest',label:'Übungspause',explanation:'Erholung nach einer Übung.'},
-  {key:'roundRest',label:'Rundenpause',explanation:'Zusätzliche Pause zwischen den Runden.'},
-  {key:'finisher',label:'Auspowern / Finisher',explanation:'Einmal nach dem letzten Übungsblock.'},
+  {key:'warmup',label:'Startphase',explanation:'Einmal vor der ersten Zyklus.'},
+  {key:'rounds',label:'Zyklen',explanation:'Anzahl der Wiederholungen des gesamten Zyklus.'},
+  {key:'exercises',label:'Intervalle pro Zyklus',explanation:'Anzahl der Intervalle aus Aktivphase und Intervallpause pro Zyklus.'},
+  {key:'work',label:'Aktivphase',explanation:'Dauer der Aktivphase pro Intervall.'},
+  {key:'rest',label:'Intervallpause',explanation:'Pause nach einer Aktivphase.'},
+  {key:'roundRest',label:'Zykluspause',explanation:'Zusätzliche Pause zwischen den Zyklen.'},
+  {key:'finisher',label:'Abschlussphase',explanation:'Einmal nach dem letzten Zyklus.'},
 ];
-const labels:Record<Kind,string> = {warmup:'Aufwärmen',work:'Belastung',rest:'Übungspause',roundRest:'Rundenpause',finisher:'Auspowern'};
+const labels:Record<Kind,string> = {warmup:'Startphase',work:'Aktivphase',rest:'Intervallpause',roundRest:'Zykluspause',finisher:'Abschlussphase'};
 const fmt=(seconds:number)=>String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
-function stepName(step:Step){return labels[step.kind]+(step.exercise?' · Übung '+step.exercise:step.round?' · Runde '+step.round:'');}
+function stepName(step:Step){return labels[step.kind]+(step.exercise?' · Intervall '+step.exercise:step.round?' · Zyklus '+step.round:'');}
 
 function Flow({values,highlight,lastExerciseRest,lastRoundRest}:{values:typeof defaults;highlight?:HelpKey;lastExerciseRest:boolean;lastRoundRest:boolean}) {
   const node=(key:Field,label:string)=> <span className={styles.node} data-highlight={highlight===key} data-kind={key}>{label}<b>{values[key]||'–'}{key==='rounds'||key==='exercises'?'':' s'}</b></span>;
-  return <div className={styles.flow} aria-label="Ablaufdiagramm des Trainings">
-    {node('warmup','Aufwärmen')}<span aria-hidden="true">↓</span>
+  return <div className={styles.flow} aria-label="Ablaufdiagramm des Timers">
+    {node('warmup','Startphase')}<span aria-hidden="true">↓</span>
     <div className={styles.loop} data-highlight={highlight==='rounds'}>
-      <strong>{values.rounds||'–'} × Runde</strong>
+      <strong>{values.rounds||'–'} × Zyklus</strong>
       <div className={styles.loop} data-highlight={highlight==='exercises'||highlight==='lastExerciseRest'}>
-        <strong>{values.exercises||'–'} × Übung</strong>
-        {node('work','Belastung')}<span aria-hidden="true">↓</span>{node('rest','Übungspause')}
-        {!lastExerciseRest&&<small>Letzte Übung ohne Übungspause</small>}
+        <strong>{values.exercises||'–'} × Intervall</strong>
+        {node('work','Aktivphase')}<span aria-hidden="true">↓</span>{node('rest','Intervallpause')}
+        {!lastExerciseRest&&<small>Letzte Intervall ohne Intervallpause</small>}
       </div>
       <span aria-hidden="true">↓</span>
-      <div data-highlight={highlight==='lastRoundRest'} className={styles.roundOption}>{node('roundRest','Rundenpause')}<small>{lastRoundRest?'Auch nach letzter Runde':'Nur zwischen Runden'}</small></div>
+      <div data-highlight={highlight==='lastRoundRest'} className={styles.roundOption}>{node('roundRest','Zykluspause')}<small>{lastRoundRest?'Auch nach letztem Zyklus':'Nur zwischen Zyklen'}</small></div>
     </div>
-    <span aria-hidden="true">↓</span>{node('finisher','Finisher')}
+    <span aria-hidden="true">↓</span>{node('finisher','Abschlussphase')}
   </div>;
 }
 
@@ -96,10 +96,10 @@ export default function CycleTimerPage():ReactNode{
   const overall=state?remaining+plan.slice(state.index+1).reduce((n,s)=>n+s.seconds,0):total;
   const helpProps={values,lastExerciseRest,lastRoundRest};
 
-  return <Layout title="Zyklus-Timer" description="Konfigurierbarer Intervalltimer für Training und wiederkehrende Abläufe.">
+  return <Layout title="Zyklus-Timer" description="Konfigurierbarer Timer für zeitgesteuerte und wiederkehrende Abläufe.">
     <main className={shared.page}><div className="container">
-      <Link to="/tools">← Alle Tools</Link>
-      <header className={shared.hero}><span className={shared.eyebrow}>Knowledge Wiki · Tools</span><Heading as="h1">Zyklus-Timer</Heading><p>Konfiguriere dein Training – der Timer führt dich durch jede Phase.</p></header>
+      <Link to="/tools">Alle Tools</Link>
+      <header className={shared.hero}><span className={shared.eyebrow}>Knowledge Wiki · Tools</span><Heading as="h1">Zyklus-Timer</Heading><p>Zeitgesteuerte Abläufe mit frei konfigurierbaren Intervallen, Zyklen und Pausen.</p></header>
       {state===null?<div className={styles.layout}>
         <section className={shared.card}>
           <Heading as="h2">Konfiguration</Heading>
@@ -111,26 +111,26 @@ export default function CycleTimerPage():ReactNode{
             </div>)}
           </div>
           <div className={styles.options}>
-            <div className={styles.labelRow}><label><input type="checkbox" checked={lastExerciseRest} onChange={e=>setLastExerciseRest(e.target.checked)}/> Übungspause auch nach letzter Übung</label><Help field="lastExerciseRest" label="Letzte Übungspause" explanation="Deaktivieren, wenn direkt nach der letzten Belastung die Rundenpause oder der Finisher folgen soll." {...helpProps}/></div>
-            <div className={styles.labelRow}><label><input type="checkbox" checked={lastRoundRest} onChange={e=>setLastRoundRest(e.target.checked)}/> Rundenpause auch nach letzter Runde</label><Help field="lastRoundRest" label="Letzte Rundenpause" explanation="Aktivieren, wenn vor dem Finisher noch eine zusätzliche Rundenpause gewünscht ist." {...helpProps}/></div>
+            <div className={styles.labelRow}><label><input type="checkbox" checked={lastExerciseRest} onChange={e=>setLastExerciseRest(e.target.checked)}/> Intervallpause auch nach letzter Intervall</label><Help field="lastExerciseRest" label="Letzte Intervallpause" explanation="Deaktivieren, wenn auf die letzte Aktivphase direkt die Zykluspause oder Abschlussphase folgen soll." {...helpProps}/></div>
+            <div className={styles.labelRow}><label><input type="checkbox" checked={lastRoundRest} onChange={e=>setLastRoundRest(e.target.checked)}/> Zykluspause auch nach letztem Zyklus</label><Help field="lastRoundRest" label="Letzte Zykluspause" explanation="Aktivieren, wenn vor der Abschlussphase eine zusätzliche Zykluspause vorgesehen ist." {...helpProps}/></div>
           </div>
-          {plan.length===0?<p role="alert">Bitte ganze Zahlen eingeben: 1–50 Runden und Übungen, 1–3600 s Belastung und 0–3600 s für optionale Phasen.</p>:<p className={styles.total}>Gesamtdauer <strong>{fmt(total)}</strong> · {plan.length} Schritte</p>}
-          <div className={styles.actions}><button className="button button--primary button--lg" disabled={!plan.length} onClick={()=>setState(startPlan(plan,performance.now()))}>▶ Start</button><button className="button button--secondary" onClick={()=>{setValues(defaults);setLastExerciseRest(true);setLastRoundRest(false);}}>Standardwerte</button></div>
+          {plan.length===0?<p role="alert">Bitte ganze Zahlen eingeben: 1–50 Zyklen und Intervalle, 1–3600 s Aktivphase und 0–3600 s für optionale Phasen.</p>:<p className={styles.total}>Gesamtdauer <strong>{fmt(total)}</strong> · {plan.length} Schritte</p>}
+          <div className={styles.actions}><button className="button button--primary button--lg" disabled={!plan.length} onClick={()=>setState(startPlan(plan,performance.now()))}>Start</button><button className="button button--secondary" onClick={()=>{setValues(defaults);setLastExerciseRest(true);setLastRoundRest(false);}}>Standardwerte</button></div>
         </section>
-        <section className={shared.card}><Heading as="h2">Trainingsablauf</Heading><Flow {...helpProps}/><small>Die Vorschau zeigt die verschachtelten Wiederholungen. Phasen mit 0 Sekunden werden übersprungen.</small></section>
+        <section className={shared.card}><Heading as="h2">Ablaufübersicht</Heading><Flow {...helpProps}/><small>Die Vorschau zeigt die verschachtelten Wiederholungen. Phasen mit 0 Sekunden werden übersprungen.</small></section>
       </div>:<section className={styles.session} data-kind={current?.kind??'done'}>
-        <div className={styles.phase} aria-live="polite">{current?labels[current.kind]:'Training abgeschlossen!'}</div>
-        {current&&<><p className={styles.context}>{current.round?'Runde '+current.round+' / '+values.rounds:'Einmalige Phase'}{current.exercise?' · Übung '+current.exercise+' / '+values.exercises:''} · Schritt {state.index+1} / {plan.length}</p>
+        <div className={styles.phase} aria-live="polite">{current?labels[current.kind]:'Ablauf abgeschlossen'}</div>
+        {current&&<><p className={styles.context}>{current.round?'Zyklus '+current.round+' / '+values.rounds:'Einmalige Phase'}{current.exercise?' · Intervall '+current.exercise+' / '+values.exercises:''} · Schritt {state.index+1} / {plan.length}</p>
         <div className={styles.clock} aria-label="Verbleibende Zeit">{fmt(remaining)}</div>
         <progress className={styles.progress} aria-label="Fortschritt der aktuellen Phase" max={current.seconds*1000} value={current.seconds*1000-state.remainingMs}/>
         <div className={styles.metrics}><span>Gesamt verbleibend <strong>{fmt(overall)}</strong></span><span>Als Nächstes <strong>{next?stepName(next)+' · '+fmt(next.seconds):'Fertig'}</strong></span></div>
         <progress className={styles.progress} aria-label="Gesamtfortschritt" max={total} value={Math.max(0,total-overall)}/>
         <p className={styles.status}>{running?'Timer läuft':'Pausiert'}</p></>}
         <div className={styles.actions}>
-          {current&&<><button className="button button--primary button--lg" onClick={()=>act(running?'pause':'resume')}>{running?'Ⅱ Pause':'▶ Fortsetzen'}</button><button className="button button--secondary" onClick={()=>act('next')}>Nächster Schritt ⏭</button><button className="button button--secondary" onClick={()=>act('repeat')}>↻ Schritt wiederholen</button></>}
+          {current&&<><button className="button button--primary button--lg" onClick={()=>act(running?'pause':'resume')}>{running?'Pause':'Fortsetzen'}</button><button className="button button--secondary" onClick={()=>act('next')}>Nächster Schritt</button><button className="button button--secondary" onClick={()=>act('repeat')}>Schritt wiederholen</button></>}
           <button className="button button--outline button--danger" onClick={()=>setState(null)}>{current?'Abbrechen':'Zur Konfiguration'}</button>
         </div>
-        <small>Bei gesperrtem Bildschirm kann der Browser die Anzeige anhalten. Für den Trainingsbetrieb die Seite geöffnet lassen.</small>
+        <small>Bei gesperrtem Bildschirm kann der Browser die Anzeige anhalten. Für eine kontinuierliche Anzeige die Seite geöffnet lassen.</small>
       </section>}
     </div></main>
   </Layout>;

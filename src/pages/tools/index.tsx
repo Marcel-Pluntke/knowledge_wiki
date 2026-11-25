@@ -218,8 +218,8 @@ export default function ToolsPage(): ReactNode {
           </header>
 
           <section className={styles.notice} aria-label="Weitere Tools">
-            <strong>Zyklus-Timer</strong> – frei konfigurierbare Trainingsintervalle, Runden und Pausen.{' '}
-            <Link className="button button--primary button--sm" to="/tools/zyklus-timer">Timer öffnen →</Link>
+            <strong>Zyklus-Timer</strong> – frei konfigurierbare Zeitintervalle, Zyklen und Pausen.{' '}
+            <Link className="button button--primary button--sm" to="/tools/zyklus-timer">Timer öffnen</Link>
           </section>
 
           <div className={styles.notice}>
