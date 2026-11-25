@@ -331,3 +331,8 @@ table td {
     overflow-x: auto;
   }
 }
+
+/* Native MathML output from KaTeX: readable equations in both color modes. */
+.markdown .katex-display { display: block; overflow-x: auto; padding: .65rem 0; }
+.markdown math { font-family: math, 'Cambria Math', 'STIX Two Math', serif; font-size: 1.08em; }
+.markdown math[display='block'] { display: block; overflow-x: auto; max-width: 100%; padding: .5rem 0; }
