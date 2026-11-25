@@ -10,7 +10,7 @@ const defaults = {warmup:'180', rounds:'3', exercises:'6', work:'40', rest:'20',
 type Field = keyof typeof defaults;
 type HelpKey = Field | 'lastExerciseRest' | 'lastRoundRest';
 const fields: {key:Field; label:string; explanation:string}[] = [
-  {key:'warmup',label:'Startphase',explanation:'Einmal vor der ersten Zyklus.'},
+  {key:'warmup',label:'Startphase',explanation:'Einmal vor dem ersten Zyklus.'},
   {key:'rounds',label:'Zyklen',explanation:'Anzahl der Wiederholungen des gesamten Zyklus.'},
   {key:'exercises',label:'Intervalle pro Zyklus',explanation:'Anzahl der Intervalle aus Aktivphase und Intervallpause pro Zyklus.'},
   {key:'work',label:'Aktivphase',explanation:'Dauer der Aktivphase pro Intervall.'},
@@ -31,7 +31,7 @@ function Flow({values,highlight,lastExerciseRest,lastRoundRest}:{values:typeof d
       <div className={styles.loop} data-highlight={highlight==='exercises'||highlight==='lastExerciseRest'}>
         <strong>{values.exercises||'–'} × Intervall</strong>
         {node('work','Aktivphase')}<span aria-hidden="true">↓</span>{node('rest','Intervallpause')}
-        {!lastExerciseRest&&<small>Letzte Intervall ohne Intervallpause</small>}
+        {!lastExerciseRest&&<small>Letztes Intervall ohne Intervallpause</small>}
       </div>
       <span aria-hidden="true">↓</span>
       <div data-highlight={highlight==='lastRoundRest'} className={styles.roundOption}>{node('roundRest','Zykluspause')}<small>{lastRoundRest?'Auch nach letztem Zyklus':'Nur zwischen Zyklen'}</small></div>
@@ -111,7 +111,7 @@ export default function CycleTimerPage():ReactNode{
             </div>)}
           </div>
           <div className={styles.options}>
-            <div className={styles.labelRow}><label><input type="checkbox" checked={lastExerciseRest} onChange={e=>setLastExerciseRest(e.target.checked)}/> Intervallpause auch nach letzter Intervall</label><Help field="lastExerciseRest" label="Letzte Intervallpause" explanation="Deaktivieren, wenn auf die letzte Aktivphase direkt die Zykluspause oder Abschlussphase folgen soll." {...helpProps}/></div>
+            <div className={styles.labelRow}><label><input type="checkbox" checked={lastExerciseRest} onChange={e=>setLastExerciseRest(e.target.checked)}/> Intervallpause auch nach letztem Intervall</label><Help field="lastExerciseRest" label="Letzte Intervallpause" explanation="Deaktivieren, wenn auf die letzte Aktivphase direkt die Zykluspause oder Abschlussphase folgen soll." {...helpProps}/></div>
             <div className={styles.labelRow}><label><input type="checkbox" checked={lastRoundRest} onChange={e=>setLastRoundRest(e.target.checked)}/> Zykluspause auch nach letztem Zyklus</label><Help field="lastRoundRest" label="Letzte Zykluspause" explanation="Aktivieren, wenn vor der Abschlussphase eine zusätzliche Zykluspause vorgesehen ist." {...helpProps}/></div>
           </div>
           {plan.length===0?<p role="alert">Bitte ganze Zahlen eingeben: 1–50 Zyklen und Intervalle, 1–3600 s Aktivphase und 0–3600 s für optionale Phasen.</p>:<p className={styles.total}>Gesamtdauer <strong>{fmt(total)}</strong> · {plan.length} Schritte</p>}
