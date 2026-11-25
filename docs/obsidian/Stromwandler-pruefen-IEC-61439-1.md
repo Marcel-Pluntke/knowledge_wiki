@@ -42,21 +42,21 @@ Vor einer Messung gehören mindestens diese Angaben in den Prüfplan:
 
 Bei einer **Primärstromeinspeisung** führt ein geeignetes Prüfgerät einen definierten Wechselstrom durch den Wandler. Ein Messgerät erfasst den Primärstrom, ein zweites den Sekundärstrom im **geschlossenen** Messkreis. Aus den Effektivwerten entsteht ein Plausibilitätswert:
 
-$
+$$
 k_{\mathrm{mess}}=\frac{I_{\mathrm{p}}}{I_{\mathrm{s}}}
-$
+$$
 
 Die Polaritätskontrolle berücksichtigt zusätzlich die Richtung bzw. Phasenlage; dazu ist ein passendes Prüfverfahren erforderlich. [OMICRON: CT-Prüfung durch Primäreinspeisung](https://www.omicronenergy.com/download/document/EE00F73F-3E53-4DA6-B80F-A0067AAF42A8/)
 
 **Rechenbeispiel, idealisiert:** Bei **400/5 A** gilt:
 
-$
+$$
 k_{\mathrm{n}}=\frac{400\,\mathrm{A}}{5\,\mathrm{A}}=80
-$
+$$
 
-$
+$$
 I_{\mathrm{s}}=\frac{I_{\mathrm{p}}}{k_{\mathrm{n}}}=\frac{320\,\mathrm{A}}{80}=4\,\mathrm{A}
-$
+$$
 
 Damit wären bei 320 A primär idealisiert 4 A sekundär zu erwarten. Eine Abweichung im realen Aufbau kann von Wandlerfehler, Bürde, Messgerät, Magnetisierung oder Verdrahtung kommen. **Ein einzelner Punkt bei 320 A belegt keine Genauigkeitsklasse.** Dafür müssen die spezifizierten Strom- und Bürdebedingungen mit geeigneter Referenztechnik untersucht werden. [IEC 61869-2](https://webstore.iec.ch/en/publication/6050) · [OMICRON: Umfang von CT-Prüfungen](https://www.omicronenergy.com/en/products/ct-analyzer)
 
@@ -68,25 +68,25 @@ Eine reine **Sekundäreinspeisung** in den nachgeschalteten Messkreis prüft vor
 
 Die **Bürde** ist die gesamte Impedanz, die der Wandler auf seiner Sekundärseite treiben muss: Messgerät oder Relais **plus** Hin- und Rückleitung, Klemmen und Übergänge. Mit den Effektivwerten der Sekundärspannung und des Sekundärstroms ergibt sich die Scheinleistung:
 
-$
+$$
 S=U_{\mathrm{s}}\cdot I_{\mathrm{s}}
-$
+$$
 
 Für eine rein ohmsche Ersatzbürde (ohne den Eigenwiderstand der CT-Wicklung) gilt:
 
-$
+$$
 S=I_{\mathrm{s}}^2\cdot R_{\mathrm{ges}}
-$
+$$
 
 **Beispiel, nur zur Anschauung:** Ein 5-A-Kreis mit insgesamt 0,20 Ω ohmscher Bürde benötigt:
 
-$
+$$
 U_{\mathrm{s}}=5\,\mathrm{A}\cdot 0{,}20\,\Omega=1{,}0\,\mathrm{V}
-$
+$$
 
-$
+$$
 S=(5\,\mathrm{A})^2\cdot 0{,}20\,\Omega=5\,\mathrm{VA}
-$
+$$
 
 Derselbe Widerstand verursacht bei 1 A nur 0,2 VA. Die reale Beurteilung muss die Nennbürde und Genauigkeitsklasse **des konkreten Wandlers** sowie Frequenz und Phasenlage berücksichtigen. Zu große Bürde kann Messfehler und frühere Sättigung begünstigen. [Schneider Electric: CT-Auswahl und Bürde](https://ckm-content.se.com/ckmContent/sfc/servlet.shepherd/document/download/0691H00000FJlVkQAL) · [OMICRON: Bürde und Wandlertests](https://www.omicronenergy.com/en/products/ct-analyzer)
 
@@ -102,9 +102,9 @@ Bei einer Prüfung mit Strom werden die im Prüfplan festgelegten Stromkreise be
 
 Die Temperaturerhöhung einer Messstelle ist:
 
-$
+$$
 \Delta T=T_{\mathrm{Messstelle}}-T_{\mathrm{Umgebung}}
-$
+$$
 
 Strom, Zeit, Umgebung und alle Temperaturkanäle gemeinsam aufzeichnen, bis das im Prüfplan definierte thermische Stabilitätskriterium erreicht ist. Gegen die **für den jeweiligen Messpunkt anwendbaren** Grenzwerte und Herstellerangaben bewerten; hier wird bewusst kein pauschaler CT-Grenzwert angegeben. Der relevante Produktteil und der vereinbarte Nachweisweg gehören in den Bericht. [IEC 61439-2:2020](https://webstore.iec.ch/en/publication/30043) · [ABB: Erwärmungsnachweis in Schaltgerätekombinationen](https://library.e.abb.com/public/32f98df19e5849e1b6b5d6172e00be73/2CPC000313B0201.pdf)
 
@@ -130,6 +130,8 @@ Beim Erwärmungsversuch eines induktiven Stromwandlers beschreibt IEC 61869-2:20
 
 ### 5.2 Mathematisches Modell {#52-mathematisches-modell}
 
+**Direkt berechnen:** [Wicklungstemperatur-Rechner öffnen](https://marcel-pluntke.github.io/knowledge_wiki/tools/wicklungstemperatur). Für die absolute Wicklungstemperatur genügen Kaltwiderstand, Umgebungstemperatur bei thermischem Gleichgewicht vor der Prüfung und Warmwiderstand zum Abschaltzeitpunkt. Kupfer (234,5 °C) ist voreingestellt; die Umgebungstemperatur am Prüfende ist für die Berechnung der Temperaturerhöhung optional.
+
 Die folgenden Größen beschreiben die kalte Referenzmessung und das Ende des Erwärmungsversuchs.
 
 | Größe | Bedeutung | Einheit |
@@ -143,32 +145,32 @@ Die folgenden Größen beschreiben die kalte Referenzmessung und das Ende des Er
 
 Näherung für die Temperaturabhängigkeit des Leiterwiderstands:
 
-$
+$$
 \frac{R_{\mathrm{w}}}{R_{\mathrm{k}}}
 =\frac{K+\vartheta_{\mathrm{w}}}{K+\vartheta_{\mathrm{k}}}
-$
+$$
 
 Nach der mittleren Wicklungstemperatur aufgelöst:
 
-$
+$$
 \boxed{\vartheta_{\mathrm{w}}=\frac{R_{\mathrm{w}}}{R_{\mathrm{k}}}
 \left(K+\vartheta_{\mathrm{k}}\right)-K}
-$
+$$
 
 Für die Temperaturerhöhung gegenüber der Umgebung am Prüfende gilt:
 
-$
+$$
 \boxed{\Delta\vartheta_{\mathrm{W}}=\vartheta_{\mathrm{w}}-\vartheta_{\mathrm{a}}}
-$
+$$
 
 Kombinierte Gleichung:
 
-$
+$$
 \Delta\vartheta_{\mathrm{W}}=
 \frac{R_{\mathrm{w}}-R_{\mathrm{k}}}{R_{\mathrm{k}}}
 \left(K+\vartheta_{\mathrm{k}}\right)
 +\vartheta_{\mathrm{k}}-\vartheta_{\mathrm{a}}
-$
+$$
 
 Für Kupfer wird in diesem Artikel die Materialkonstante 234,5 °C verwendet. Für Aluminium sind 225 °C gebräuchlich. Werkstoff und Materialkonstante müssen zur Wicklung und zur festgelegten Prüfvorschrift passen. Die Kaltwicklungstemperatur darf nur dann mit der Umgebung gleichgesetzt werden, wenn tatsächlich thermisches Gleichgewicht vorliegt.
 
@@ -184,16 +186,16 @@ Illustrative Daten eines Stromwandlers; keine Hersteller- oder Normgrenzwerte.
 | Umgebungstemperatur am Prüfende | 35,0 °C |
 | Materialkonstante Kupfer | 234,5 °C |
 
-$
+$$
 \vartheta_{\mathrm{w}}=
 \frac{0{,}650}{0{,}500}(234{,}5+20)-234{,}5
 =96{,}35\,^\circ\mathrm{C}
-$
+$$
 
-$
+$$
 \Delta\vartheta_{\mathrm{W}}=
 96{,}35-35{,}0=61{,}35\,\mathrm{K}
-$
+$$
 
 **Ergebnis:** Die mittlere Wicklungstemperatur beträgt 96,35 °C, die Temperaturerhöhung gegenüber der maßgeblichen Umgebung 61,35 K. Eine Aussage zur Einhaltung der zulässigen Temperatur setzt die anwendbaren Grenzwerte voraus.
 
