@@ -108,6 +108,14 @@ export default function WindingTemperaturePage(): ReactNode {
         <p>Widerstandsmessung nur am sicher freigeschalteten Prüfling. Einen Stromwandler-Sekundärkreis niemals bei fließendem Primärstrom öffnen.</p>
         <Link to={article}>Zum Fachartikel: Erwärmungsmessung über den Wicklungswiderstand</Link>
       </section>
+      <section className={styles.explanation}>
+        <Heading as="h2">Quellen und Referenzen</Heading>
+        <ul>
+          <li><a href="https://www.saso.gov.sa/ar/Laws-And-Regulations/Technical_regulations/Documents/SASO-IEEE-C57-2018-E.pdf#page=63" target="_blank" rel="noopener noreferrer">IEEE C57.13-2016 – öffentlich zugängliche SASO IEEE C57:2018</a> · S. 61, Abschnitt 11.2.5, Gleichungen (26) und (27): mittlere Wicklungstemperatur, Kupferkonstante 234,5 und EC-Aluminium 225. Abschnitte 11.2.3–11.2.6 behandeln Messung, Abschaltkorrektur und Temperaturerhöhung.</li>
+          <li>Hideki Garduno (2012), <a href="https://publications.lib.chalmers.se/records/fulltext/173228/173228.pdf#page=24" target="_blank" rel="noopener noreferrer">Temperature Rise Testing of Current Transformers: Improvement in Test Method</a>, Chalmers University of Technology, Masterarbeit, S. 14, Abschnitt 3.1.4, Gleichungen (15) und (16): Berechnung von Wicklungstemperatur und Temperaturerhöhung. <a href="https://odr.chalmers.se/items/0e911724-2e69-41e3-9c01-f30e577e11fb" target="_blank" rel="noopener noreferrer">Publikationseintrag</a>.</li>
+        </ul>
+        <p className={styles.smallPrint}>Die Quellen belegen das Rechenmodell. Für einen formalen IEC-Nachweis gelten die jeweils anwendbare IEC-Produktnorm, Prüfvorschrift und erforderliche Korrekturen; das Tool berechnet keine vollständige Normkonformität.</p>
+      </section>
     </div></main>
   </Layout>;
 }
