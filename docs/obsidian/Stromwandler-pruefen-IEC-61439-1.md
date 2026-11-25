@@ -170,7 +170,7 @@ $
 +\vartheta_{\mathrm{k}}-\vartheta_{\mathrm{a}}
 $
 
-Für Kupfer wird häufig mit 235 °C gerechnet; je nach Prüfvorschrift findet man auch 234,5 °C. Für Aluminium sind 225 °C gebräuchlich. Werkstoff und Materialkonstante müssen zur Wicklung und zur festgelegten Prüfvorschrift passen. Die Kaltwicklungstemperatur darf nur dann mit der Umgebung gleichgesetzt werden, wenn tatsächlich thermisches Gleichgewicht vorliegt.
+Für Kupfer wird in diesem Artikel die Materialkonstante 234,5 °C verwendet. Für Aluminium sind 225 °C gebräuchlich. Werkstoff und Materialkonstante müssen zur Wicklung und zur festgelegten Prüfvorschrift passen. Die Kaltwicklungstemperatur darf nur dann mit der Umgebung gleichgesetzt werden, wenn tatsächlich thermisches Gleichgewicht vorliegt.
 
 ### 5.3 Rechenbeispiel – Kupferwicklung {#53-rechenbeispiel-kupferwicklung}
 
@@ -182,20 +182,20 @@ Illustrative Daten eines Stromwandlers; keine Hersteller- oder Normgrenzwerte.
 | Kaltwicklungstemperatur | 20,0 °C |
 | Warmwiderstand zum Abschaltzeitpunkt | 0,650 Ω |
 | Umgebungstemperatur am Prüfende | 35,0 °C |
-| Materialkonstante Kupfer (Beispiel) | 235 °C |
+| Materialkonstante Kupfer | 234,5 °C |
 
 $
 \vartheta_{\mathrm{w}}=
-\frac{0{,}650}{0{,}500}(235+20)-235
-=96{,}5\,^\circ\mathrm{C}
+\frac{0{,}650}{0{,}500}(234{,}5+20)-234{,}5
+=96{,}35\,^\circ\mathrm{C}
 $
 
 $
 \Delta\vartheta_{\mathrm{W}}=
-96{,}5-35{,}0=61{,}5\,\mathrm{K}
+96{,}35-35{,}0=61{,}35\,\mathrm{K}
 $
 
-**Ergebnis:** Die mittlere Wicklungstemperatur beträgt 96,5 °C, die Temperaturerhöhung gegenüber der maßgeblichen Umgebung 61,5 K. Eine Aussage zur Einhaltung der zulässigen Temperatur setzt die anwendbaren Grenzwerte voraus.
+**Ergebnis:** Die mittlere Wicklungstemperatur beträgt 96,35 °C, die Temperaturerhöhung gegenüber der maßgeblichen Umgebung 61,35 K. Eine Aussage zur Einhaltung der zulässigen Temperatur setzt die anwendbaren Grenzwerte voraus.
 
 ### 5.4 Rückextrapolation auf den Abschaltzeitpunkt {#54-rückextrapolation-auf-den-abschaltzeitpunkt}
 
