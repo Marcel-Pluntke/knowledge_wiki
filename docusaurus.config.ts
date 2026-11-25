@@ -101,7 +101,9 @@ const config: Config = {
         {
           title: 'Tools & Write',
           items: [
-            {label: 'IEC 61439 Erwärmungs-Umrechner', to: '/tools'},
+            {label: 'Tools – Übersicht', to: '/tools'},
+            {label: 'IEC 61439 Erwärmungs-Umrechner', to: '/tools/erwaermungs-umrechner'},
+            {label: 'Zyklus-Timer', to: '/tools/zyklus-timer'},
             {label: 'Blog', to: '/blog'},
           ],
         },

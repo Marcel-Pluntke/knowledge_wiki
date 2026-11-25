@@ -287,3 +287,52 @@
     min-height: 128px;
   }
 }
+
+/* Tools landing page: equal, responsive navigation cards. */
+.toolGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 1.25rem;
+  max-width: 1050px;
+  margin: 0 auto;
+}
+
+.toolCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--wiki-border);
+  border-radius: 24px;
+  background: var(--wiki-surface);
+  box-shadow: var(--wiki-shadow);
+}
+
+.toolCard h2 {
+  margin-bottom: 0.75rem;
+  font-size: clamp(1.4rem, 3vw, 1.85rem);
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.toolCard p {
+  flex: 1;
+  margin-bottom: 1.5rem;
+  color: var(--ifm-color-content-secondary);
+  line-height: 1.65;
+}
+
+.toolCard a {
+  margin-top: auto;
+}
+
+@media (max-width: 600px) {
+  .toolCard {
+    border-radius: 20px;
+  }
+
+  .toolCard a {
+    width: 100%;
+  }
+}
