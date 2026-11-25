@@ -22,19 +22,41 @@ const labels:Record<Kind,string> = {warmup:'Startphase',work:'Aktivphase',rest:'
 const fmt=(seconds:number)=>String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
 function stepName(step:Step){return labels[step.kind]+(step.exercise?' · Intervall '+step.exercise:step.round?' · Zyklus '+step.round:'');}
 
+function RepeatPath({repeat,label,children}:{repeat:boolean;label:string;children:ReactNode}) {
+  return <div className={styles.repeatPath}>
+    <div className={styles.repeatBody} data-repeat={repeat}>
+      <div className={styles.repeatSteps}>{children}</div>
+      {repeat&&<span className={styles.returnArrow} aria-hidden="true"/>}
+    </div>
+    {repeat&&<small className={styles.returnLabel}>{label}</small>}
+  </div>;
+}
+
 function Flow({values,highlight,lastExerciseRest,lastRoundRest}:{values:typeof defaults;highlight?:HelpKey;lastExerciseRest:boolean;lastRoundRest:boolean}) {
   const node=(key:Field,label:string)=> <span className={styles.node} data-highlight={highlight===key} data-kind={key}>{label}<b>{values[key]||'–'}{key==='rounds'||key==='exercises'?'':' s'}</b></span>;
+  const moreIntervals=Number(values.exercises)>1;
+  const moreCycles=Number(values.rounds)>1;
+  const hasIntervalRest=Number(values.rest)>0&&(moreIntervals||lastExerciseRest);
+  const hasCycleRest=Number(values.roundRest)>0&&(moreCycles||lastRoundRest);
   return <div className={styles.flow} aria-label="Ablaufdiagramm des Timers">
     {node('warmup','Startphase')}<span aria-hidden="true">↓</span>
     <div className={styles.loop} data-highlight={highlight==='rounds'}>
       <strong>{values.rounds||'–'} × Zyklus</strong>
-      <div className={styles.loop} data-highlight={highlight==='exercises'||highlight==='lastExerciseRest'}>
-        <strong>{values.exercises||'–'} × Intervall</strong>
-        {node('work','Aktivphase')}<span aria-hidden="true">↓</span>{node('rest','Intervallpause')}
-        {!lastExerciseRest&&<small>Letztes Intervall ohne Intervallpause</small>}
-      </div>
-      <span aria-hidden="true">↓</span>
-      <div data-highlight={highlight==='lastRoundRest'} className={styles.roundOption}>{node('roundRest','Zykluspause')}<small>{lastRoundRest?'Auch nach letztem Zyklus':'Nur zwischen Zyklen'}</small></div>
+      <RepeatPath repeat={moreCycles} label="Nächster Zyklus: zurück zum Intervallblock">
+        <div className={styles.loop} data-highlight={highlight==='exercises'||highlight==='lastExerciseRest'}>
+          <strong>{values.exercises||'–'} × Intervall</strong>
+          <RepeatPath repeat={moreIntervals} label="Nächstes Intervall: zurück zur Aktivphase">
+            {node('work','Aktivphase')}
+            {hasIntervalRest&&<><span aria-hidden="true">↓</span>{node('rest','Intervallpause')}</>}
+          </RepeatPath>
+          {hasIntervalRest&&!lastExerciseRest&&<small>Letztes Intervall ohne Intervallpause</small>}
+          {!hasIntervalRest&&<small data-highlight={highlight==='rest'||highlight==='lastExerciseRest'}>Keine Intervallpause</small>}
+        </div>
+        {hasCycleRest&&<><span aria-hidden="true">↓</span>
+          <div data-highlight={highlight==='lastRoundRest'} className={styles.roundOption}>{node('roundRest','Zykluspause')}<small>{lastRoundRest?'Auch nach letztem Zyklus':'Nur zwischen Zyklen'}</small></div>
+        </>}
+      </RepeatPath>
+      {!hasCycleRest&&<small data-highlight={highlight==='roundRest'||highlight==='lastRoundRest'}>Keine Zykluspause</small>}
     </div>
     <span aria-hidden="true">↓</span>{node('finisher','Abschlussphase')}
   </div>;

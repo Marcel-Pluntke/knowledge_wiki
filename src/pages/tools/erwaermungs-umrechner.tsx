@@ -1,4 +1,4 @@
-import {useMemo, useState, type ReactNode} from 'react';
+import {createElement, useMemo, useState, type ReactNode} from 'react';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
 import Link from '@docusaurus/Link';
@@ -51,6 +51,38 @@ function NumberField({
         <span className={styles.unit}>{unit}</span>
       </span>
     </label>
+  );
+}
+
+// Native MathML: real fractions, subscripts and powers without a runtime dependency.
+function mathNode(tag: string, ...children: ReactNode[]) {
+  return createElement(tag, null, ...children);
+}
+
+function HeatingFormula({kind}: {kind: 'current' | 'temperature' | 'ratio'}) {
+  const m = mathNode;
+  const op = (value: string) => m('mo', value);
+  const quantity = (symbol: 'I' | 'deltaT', subscript: string) => m('msub',
+    symbol === 'I' ? m('mi', 'I') : m('mrow', m('mi', 'Δ'), m('mi', 'T')),
+    m('mtext', subscript));
+  const exponent = m('mn', '0,61');
+  const temperatureRatio = m('mfrac', quantity('deltaT', 'Grenz'), quantity('deltaT', 'Mess'));
+  const currentRatio = m('mfrac', quantity('I', 'Ziel'), quantity('I', 'Mess'));
+  const power = (base: ReactNode, exp: ReactNode) =>
+    m('msup', m('mrow', op('('), base, op(')')), exp);
+  const equation = kind === 'temperature'
+    ? m('mrow', quantity('deltaT', 'Ziel'), op('='), quantity('deltaT', 'Mess'), op('·'),
+        power(currentRatio, m('mfrac', m('mn', '1'), exponent)))
+    : kind === 'ratio'
+      ? m('mrow', m('mfrac', quantity('I', 'Grenz'), quantity('I', 'Mess')), op('='),
+          power(temperatureRatio, exponent))
+      : m('mrow', quantity('I', 'Grenz'), op('='), quantity('I', 'Mess'), op('·'),
+          power(temperatureRatio, exponent));
+
+  return (
+    <div className={styles.formula}>
+      {createElement('math', {xmlns: 'http://www.w3.org/1998/Math/MathML', display: 'block'}, equation)}
+    </div>
   );
 }
 
@@ -108,7 +140,7 @@ function CurrentAtLimitCalculator() {
         <NumberField id="current-measured-current" label="Gemessener Prüfstrom" value={measuredCurrent} onChange={setMeasuredCurrent} unit="A" placeholder="z. B. 5900" />
       </div>
 
-      <div className={styles.formula}>I_Grenz = I_Mess · (ΔT_Grenz / ΔT_Mess)^0,61</div>
+      <HeatingFormula kind="current" />
 
       <div className={styles.resultBox} aria-live="polite">
         {!result && <span className={styles.resultHint}>Werte eingeben – das Ergebnis erscheint sofort.</span>}
@@ -180,7 +212,7 @@ function TemperatureAtCurrentCalculator() {
         <NumberField id="temp-limit-temp" label="Grenztemperatur (optional)" value={limitTemp} onChange={setLimitTemp} unit="°C" placeholder="z. B. 105" />
       </div>
 
-      <div className={styles.formula}>ΔT_Ziel = ΔT_Mess · (I_Ziel / I_Mess)^(1 / 0,61)</div>
+      <HeatingFormula kind="temperature" />
 
       <div className={styles.resultBox} aria-live="polite">
         {!result && <span className={styles.resultHint}>Gemessene Temperatur eingeben – das Ergebnis erscheint sofort.</span>}
@@ -232,12 +264,14 @@ export default function HeatingCalculatorPage(): ReactNode {
 
           <section className={styles.explanation}>
             <Heading as="h2">So wird gerechnet</Heading>
-            <p>
-              Rechner 1 verwendet <strong>I_Grenz / I_Mess = (ΔT_Grenz / ΔT_Mess)^0,61</strong>. Rechner 2 stellt
-              dieselbe Beziehung nach der Erwärmung um: <strong>ΔT_Ziel = ΔT_Mess · (I_Ziel / I_Mess)^(1/0,61)</strong>.
-              Aus der berechneten Erwärmung wird mit der eingegebenen Umgebungstemperatur wieder die absolute
-              Temperatur bestimmt.
-            </p>
+            <h3>Rechner 1 – Strom am Temperaturgrenzwert</h3>
+            <p>Die IEC-Kennlinie beschreibt das Verhältnis von Strom und Erwärmung:</p>
+            <HeatingFormula kind="ratio" />
+            <p>Durch Multiplikation mit dem gemessenen Prüfstrom ergibt sich der rechnerische Grenzstrom.</p>
+            <h3>Rechner 2 – Erwärmung bei gewünschtem Strom</h3>
+            <p>Dieselbe Beziehung wird nach der Erwärmung umgestellt:</p>
+            <HeatingFormula kind="temperature" />
+            <p>Aus der berechneten Erwärmung wird mit der eingegebenen Umgebungstemperatur wieder die absolute Temperatur bestimmt.</p>
             <p className={styles.smallPrint}>
               Die Umrechnung ist für vergleichbare Betriebs- und Kühlbedingungen gedacht. Geräte mit wesentlich
               festen oder linear vom Strom abhängigen Verlusten sowie Änderungen an Kühlung, Kontaktwiderständen,

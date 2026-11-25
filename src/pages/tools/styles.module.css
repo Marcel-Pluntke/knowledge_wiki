@@ -144,15 +144,30 @@
 }
 
 .formula {
-  margin-top: 1rem;
-  padding: 0.72rem 0.9rem;
+  margin: 1rem 0;
+  padding: 1rem 0.75rem;
+  border: 1px solid var(--wiki-border);
   border-radius: 12px;
   background: var(--wiki-muted-surface);
-  text-align: center;
-  font-family: var(--ifm-font-family-monospace);
-  font-size: 0.9rem;
-  font-weight: 700;
-  overflow-wrap: anywhere;
+  color: var(--ifm-font-color-base);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  overflow-x: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.formula math {
+  display: block;
+  width: max-content;
+  margin-inline: auto;
+  font-size: inherit;
+  font-family: math, 'Cambria Math', 'STIX Two Math', serif;
+}
+
+.explanation h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
 }
 
 .resultBox {
