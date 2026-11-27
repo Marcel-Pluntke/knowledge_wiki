@@ -1,8 +1,10 @@
-import {fireEvent,render,screen} from '@testing-library/react';
-import {describe,expect,it} from 'vitest';
+import {cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {afterEach,describe,expect,it} from 'vitest';
 import {FlashcardGame,flashcardDecks} from './FlashcardGame';
 
 describe('FlashcardGame',()=>{
+  afterEach(cleanup);
+
   it('offers the Stone Age deck and hides the answer before flipping',()=>{
     render(<FlashcardGame/>);
     expect(screen.getByRole('heading',{name:'Steinzeit'})).toBeInTheDocument();
