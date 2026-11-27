@@ -50,9 +50,13 @@ describe('isolated football integration', () => {
     Object.defineProperty(globalThis, 'localStorage', {configurable: true, writable: true, value: originalLocalStorage});
   });
 
-  it('offers football as a fourth beta game and resolves its own hash route', () => {
+  it('offers football and flashcards as separate games and resolves their hash routes', () => {
     const {container} = render(<PlatformHome profile={createProfile('Testheld')}/>);
-    expect(container.querySelectorAll('.adventure-card')).toHaveLength(4);
+    expect(container.querySelectorAll('.adventure-card')).toHaveLength(5);
+    expect(screen.getByRole('heading', {name: 'Karteikarten'})).toBeVisible();
+    fireEvent.click(screen.getByRole('button', {name: /Karteikarten lernen/}));
+    expect(location.hash).toBe('#/flashcards');
+    expect(readRoute()).toEqual({screen: 'flashcards'});
     expect(screen.getByRole('heading', {name: 'Mathe Fußball'})).toBeVisible();
     expect(screen.getByText('Beta')).toBeVisible();
 
